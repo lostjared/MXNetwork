@@ -1,8 +1,8 @@
 // I need to reimplement this with more C++ style using string instead of raw pointers
 #include "mxnetwork/socket.hpp"
 #include <cstdlib>
-#include <iostream>
 #include <errno.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +31,7 @@ bool extract_header(mxnetwork::Socket *sock, struct http_header *h) {
         }
         if (length + (size_t)rbytes >= buffer_size_value) {
             buffer_size_value *= 2;
-            char *n_buffer = (char*)realloc(buffer, buffer_size_value + 1);
+            char *n_buffer = (char *)realloc(buffer, buffer_size_value + 1);
             if (n_buffer == nullptr) {
                 perror("realloc");
                 free(buffer);
@@ -116,62 +116,67 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error on invoke of dl-file:\nuse:\ndl <host> <port> <file> <output>\n");
         return EXIT_FAILURE;
     }
-    mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
-    if (sock.connect(argv[1], argv[2])) {
-        printf("dl: connected.\n");
-        static constexpr int buffer_size = 4096;
-        char info[buffer_size];
-        snprintf(info, buffer_size - 1, "GET %s HTTP/1.0\r\nHOST: %s\r\nUser-Agent: C-DL-Client/1.0\r\nConnection: close\r\n\r\n", argv[3], argv[1]);
-        ssize_t bytes = 0;
-        if ((bytes = sock.write(info, strlen(info), MSG_NOSIGNAL)) > 0) {
-            printf("dl: request sent.\n");
-            struct http_header h;
-            if (extract_header(&sock, &h)) {
-                printf("Header: %s\n", h.header);
-                char *len_pos = strcasestr(h.header, "Content-Length:");
-                if (len_pos != nullptr) {
-                    len_pos += 15;
-                    char *end_pos;
-                    size_t f_len = strtoul(len_pos, &end_pos, 10);
-                    if (end_pos != len_pos && (end_pos != nullptr && *end_pos != '\0')) {
-                        FILE *fptr = fopen(argv[4], "wb");
-                        if (!fptr) {
-                            perror("fopen");
-                            free(h.header);
-                            free(h.body);
-                            return EXIT_FAILURE;
+
+    try {
+        mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
+        if (sock.connect(argv[1], argv[2])) {
+            printf("dl: connected.\n");
+            static constexpr int buffer_size = 4096;
+            char info[buffer_size];
+            snprintf(info, buffer_size - 1, "GET %s HTTP/1.0\r\nHOST: %s\r\nUser-Agent: C-DL-Client/1.0\r\nConnection: close\r\n\r\n", argv[3], argv[1]);
+            ssize_t bytes = 0;
+            if ((bytes = sock.write(info, strlen(info), MSG_NOSIGNAL)) > 0) {
+                printf("dl: request sent.\n");
+                struct http_header h;
+                if (extract_header(&sock, &h)) {
+                    printf("Header: %s\n", h.header);
+                    char *len_pos = strcasestr(h.header, "Content-Length:");
+                    if (len_pos != nullptr) {
+                        len_pos += 15;
+                        char *end_pos;
+                        size_t f_len = strtoul(len_pos, &end_pos, 10);
+                        if (end_pos != len_pos && (end_pos != nullptr && *end_pos != '\0')) {
+                            FILE *fptr = fopen(argv[4], "wb");
+                            if (!fptr) {
+                                perror("fopen");
+                                free(h.header);
+                                free(h.body);
+                                return EXIT_FAILURE;
+                            }
+                            size_t file_length = 0;
+                            if (h.body_length > 0) {
+                                file_length += fwrite(h.body, 1, h.body_length, fptr);
+                                print_progress(f_len, file_length);
+                            }
+                            while ((bytes = sock.read(info, buffer_size, 0)) > 0) {
+                                file_length += fwrite(info, 1, (size_t)bytes, fptr);
+                                print_progress(f_len, file_length);
+                            }
+                            if (bytes == -1) {
+                                fprintf(stderr, "dl: Connection reset or error: %s\n", strerror(errno));
+                            } else {
+                                printf("\n");
+                                if (file_length == f_len)
+                                    printf("dl: [OK] -> %s\n", argv[4]);
+                                else
+                                    printf("Incorrect file length: %zu != %zu\n", file_length, f_len);
+                            }
+                            fclose(fptr);
                         }
-                        size_t file_length = 0;
-                        if (h.body_length > 0) {
-                            file_length += fwrite(h.body, 1, h.body_length, fptr);
-                            print_progress(f_len, file_length);
-                        }
-                        while ((bytes = sock.read(info, buffer_size, 0)) > 0) {
-                            file_length += fwrite(info, 1, (size_t)bytes, fptr);
-                            print_progress(f_len, file_length);
-                        }
-                        if (bytes == -1) {
-                            fprintf(stderr, "dl: Connection reset or error: %s\n", strerror(errno));
-                        } else {
-                            printf("\n");
-                            if (file_length == f_len)
-                                printf("dl: [OK] -> %s\n", argv[4]);
-                            else
-                                printf("Incorrect file length: %zu != %zu\n", file_length, f_len);
-                        }
-                        fclose(fptr);
                     }
+                    free(h.header);
+                    free(h.body);
                 }
-                free(h.header);
-                free(h.body);
+            } else if (bytes == -1 && errno == EPIPE) {
+                fprintf(stderr, "dl: Error on send, broken pipe.\n");
             }
-        } else if (bytes == -1 && errno == EPIPE) {
-            fprintf(stderr, "dl: Error on send, broken pipe.\n");
+            sock.close();
+        } else {
+            fprintf(stderr, "Error on connect:\n");
+            return EXIT_FAILURE;
         }
-        sock.close();
-    } else {
-        fprintf(stderr, "Error on connect:\n");
-        return EXIT_FAILURE;
+    } catch (const mxnetwork::Exception &e) {
+        std::cerr << "Network error: " << e.text() << "\n";
     }
     return EXIT_SUCCESS;
 }
