@@ -30,14 +30,6 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wshadow
         -Wconversion
     )
-    add_compile_options(
-        "$<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer;-g;>"
-        "$<$<CONFIG:Release>:-O3;-march=native;-flto>"
-    )
-    add_link_options(
-        "$<$<CONFIG:Debug>:-fsanitize=address;-no-pie>"
-        "$<$<CONFIG:Release>:-flto>"
-    )
 endif()
 else()
     set(CMAKE_BUILD_TYPE Release)

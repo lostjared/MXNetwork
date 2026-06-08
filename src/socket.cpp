@@ -14,7 +14,7 @@ namespace mxnetwork {
     }
 
     Socket::~Socket() {
-        if (sock.sockfd != -1) {
+        if (sock.sockfd >= 0) {
             std::cout << "Socket: " << sock.sockfd << " closed.\n";
             close();
         }
@@ -43,8 +43,6 @@ namespace mxnetwork {
 
     Socket &Socket::operator=(Socket &&s) {
         if(this != &s) {
-            if(sock.sockfd >= 0)
-                ::close(sock.sockfd);
             type = s.type;
             setsocket(s.sock);
             s.sock.sockfd = -1;

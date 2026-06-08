@@ -26,7 +26,6 @@ int main(int argc, char **argv) {
         perror("sigaction");
         return EXIT_FAILURE;
     }
-    mx_socket_ignore_pipe_signal();
     try {
         mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
         if (sock.listen(argv[1], 5)) {
@@ -59,6 +58,8 @@ int main(int argc, char **argv) {
                     break;
                 }
             }
+        } else {
+            perror("listen");
         }
     } catch (const mxnetwork::Exception &s) {
         std::cerr << "Exception: " << s.text() << "\n";
