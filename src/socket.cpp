@@ -76,10 +76,15 @@ namespace mxnetwork {
         return false;
     }
 
-    Socket Socket::accept() {
+    bool Socket::accept(Socket &s) {
         MXSocket newsocket;
-        if(mx_socket_accept(&sock, &newsocket))
-            return Socket(newsocket);
+        if(mx_socket_accept(&sock, &newsocket)) {
+            s = Socket(newsocket);
+            return true;
+        }
+        if(errno == EINTR)
+            return false;
+
         throw Exception("Error accept socket failed.\n");
     }
 
