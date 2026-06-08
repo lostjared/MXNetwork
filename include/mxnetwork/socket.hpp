@@ -1,5 +1,5 @@
-#ifndef _MXSOCKET_H__
-#define _MXSOCKET_H__
+#ifndef MXSOCKET_H
+#define MXSOCKET_H
 
 #include "mxnetwork/exception.hpp"
 #include "mxnetwork/mxsocket.hpp"
@@ -22,12 +22,12 @@ namespace mxnetwork {
         Socket(SocketType type) noexcept;
         virtual ~Socket();
         Socket(int sockfd, SocketType type);
-        Socket(const MXSocket &s, SocketType type);
+        Socket(const MXSocket &s, SocketType type) noexcept;
         Socket(const Socket &s) = delete;
-        Socket(Socket &&s);
+        Socket(Socket &&s) noexcept;
         Socket &operator=(const Socket &s) = delete;
-        Socket &operator=(Socket &&s);
-        int sockfd() const;
+        Socket &operator=(Socket &&s) noexcept;
+        [[nodiscard]] int sockfd() const;
         bool connect(const std::string_view host, const std::string_view port);
         bool connect_unix(const std::string_view path);
         bool listen(std::string_view port, int backlog);
@@ -45,8 +45,8 @@ namespace mxnetwork {
         ssize_t sendto(const void *buf, size_t bytes);
         ssize_t recvfrom(void *buf, size_t bytes);
 
-        bool valid() const;
-        bool is_open() const;
+        [[nodiscard]] bool valid() const;
+        [[nodiscard]] bool is_open() const;
         void close();
 
       protected:

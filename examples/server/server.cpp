@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
             while (active_loop.load()) {
                 std::optional<mxnetwork::Socket> s = sock.accept();
                 if (s) {
-                    std::thread t([&sock](mxnetwork::Socket sfd) {
+                    std::thread t([sockfd = sock.sockfd()](mxnetwork::Socket sfd) {
                         char buffer[256];
                         ssize_t bytes = 0;
                         if ((bytes = sfd.read_all(buffer, 255)) > 0) {
@@ -43,15 +43,14 @@ int main(int argc, char **argv) {
                             if (value.find("exit") != std::string::npos) {
                                 active_loop.store(false);
                                 std::cerr << "server: " << ": Exiting..\n";
-                                shutdown(sock.sockfd(), SHUT_RDWR);
+                                shutdown(sockfd, SHUT_RDWR);
                                 return;
                             }
                             std::cout << value << "\n";
                         } else {
                             std::cerr << "Error reading stream.\n";
                         }
-                    },
-                                  std::move(*s));
+                    }, std::move(*s));
                     t.detach();
                 } else {
                     if (errno == EINTR)

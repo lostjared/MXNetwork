@@ -30,6 +30,12 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wshadow
         -Wconversion
     )
+    add_compile_options(
+        "$<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer>"
+    )
+    add_link_options(
+        "$<$<CONFIG:Debug>:-fsanitize=address>"
+    )
 endif()
 else()
     set(CMAKE_BUILD_TYPE Release)

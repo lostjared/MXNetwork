@@ -11,9 +11,10 @@ namespace mxnetwork {
             return;
         else
             type = SocketType::TYPE_INVALID;
+        sock.sockfd = -1;
     }
 
-    Socket::~Socket() {
+    Socket::~Socket() noexcept {
         if (sock.sockfd >= 0) {
             std::cout << "Socket: " << sock.sockfd << " closed.\n";
             close();
@@ -30,18 +31,18 @@ namespace mxnetwork {
         type = stype;
     }
 
-    Socket::Socket(const MXSocket &s, SocketType stype) {
+    Socket::Socket(const MXSocket &s, SocketType stype) noexcept {
         type = stype;
         setsocket(s);
     }
 
-    Socket::Socket(Socket &&s) {
+    Socket::Socket(Socket &&s) noexcept {
         type = s.type;
         setsocket(s.sock);
         s.sock.sockfd = -1;
     }
 
-    Socket &Socket::operator=(Socket &&s) {
+    Socket &Socket::operator=(Socket &&s) noexcept {
         if(this != &s) {
             type = s.type;
             if(sock.sockfd >= 0)
@@ -86,6 +87,9 @@ namespace mxnetwork {
 
     std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
+        if(!mx_socket_init(&newsocket))
+            return std::nullopt;
+
         if (mx_socket_accept(&sock, &newsocket)) {
             return Socket(newsocket, type);
         }
@@ -112,11 +116,11 @@ namespace mxnetwork {
         return mx_socket_set_blocking(&sock, block);
     }
 
-    bool Socket::valid() const {
+    [[nodiscard]] bool Socket::valid() const {
         return mx_socket_valid(&sock);
     }
 
-    bool Socket::is_open() const {
+    [[nodiscard]] bool Socket::is_open() const {
         return mx_socket_is_open(&sock);
     }
 
@@ -125,7 +129,7 @@ namespace mxnetwork {
             mx_socket_close(&sock);
     }
 
-    int Socket::sockfd() const {
+    [[nodiscard]] int Socket::sockfd() const {
         return sock.sockfd;
     }
 
