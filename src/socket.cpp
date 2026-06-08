@@ -1,27 +1,27 @@
 #include "mxnetwork/socket.hpp"
-#include<exception>
-#include<iostream>
-#include<string>
-
+#include <exception>
+#include <format>
+#include <iostream>
+#include <string>
 namespace mxnetwork {
 
     Socket::Socket(SocketType stype) noexcept {
         type = stype;
-        if(mx_socket_init(&sock))
+        if (mx_socket_init(&sock))
             return;
         else
             type = SocketType::TYPE_INVALID;
     }
 
     Socket::~Socket() {
-        if(sock.sockfd != -1) {
+        if (sock.sockfd != -1) {
             std::cout << "Socket: " << sock.sockfd << " closed.\n";
             close();
         }
     }
 
     Socket::Socket(int sockfd, SocketType stype) {
-        if(!mx_socket_init(&sock))
+        if (!mx_socket_init(&sock))
             throw Exception("Error on socket init.\n");
 
         sock.sockfd = sockfd;
@@ -40,7 +40,7 @@ namespace mxnetwork {
         s.sock.sockfd = -1;
     }
 
-    Socket& Socket::operator=(Socket &&s) {
+    Socket &Socket::operator=(Socket &&s) {
         setsocket(s.sock);
         type = s.type;
         s.sock.sockfd = -1;
@@ -48,47 +48,54 @@ namespace mxnetwork {
     }
 
     bool Socket::connect(const std::string_view host, const std::string_view port) {
-        if(type == SocketType::TYPE_INET)
+        if (type == SocketType::TYPE_INET)
             return mx_socket_connect(&sock, std::string(host).c_str(), std::string(port).c_str(), SOCK_STREAM);
-        else if(type == SocketType::TYPE_INET_DGRAM)
+        else if (type == SocketType::TYPE_INET_DGRAM)
             return mx_socket_connect(&sock, std::string(host).c_str(), std::string(port).c_str(), SOCK_DGRAM);
 
         return false;
     }
 
     bool Socket::connect_unix(const std::string_view path) {
-        if(type == SocketType::TYPE_UNIX)
+        if (type == SocketType::TYPE_UNIX)
             return mx_socket_unix_connect(&sock, std::string(path).c_str(), SOCK_STREAM);
-        else if(type == SocketType::TYPE_UNIX_DGRAM)
+        else if (type == SocketType::TYPE_UNIX_DGRAM)
             return mx_socket_unix_connect(&sock, std::string(path).c_str(), SOCK_DGRAM);
         return false;
     }
 
     bool Socket::listen(std::string_view port, int backlog) {
-        if(type == SocketType::TYPE_INET)
+        if (type == SocketType::TYPE_INET)
             return mx_socket_listen(&sock, std::string(port).c_str(), backlog, SOCK_STREAM);
-        else if(type == SocketType::TYPE_INET_DGRAM)
+        else if (type == SocketType::TYPE_INET_DGRAM)
             return mx_socket_listen(&sock, std::string(port).c_str(), backlog, SOCK_DGRAM);
         return false;
     }
 
     bool Socket::listen_unix(std::string_view path, int backlog) {
-        if(type == SocketType::TYPE_UNIX)
-            return mx_socket_unix_listen(&sock,std::string(path).c_str(), backlog, SOCK_STREAM);
-        else if(type == SocketType::TYPE_UNIX_DGRAM)
+        if (type == SocketType::TYPE_UNIX)
+            return mx_socket_unix_listen(&sock, std::string(path).c_str(), backlog, SOCK_STREAM);
+        else if (type == SocketType::TYPE_UNIX_DGRAM)
             return mx_socket_unix_listen(&sock, std::string(path).c_str(), backlog, SOCK_DGRAM);
         return false;
     }
 
     std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
-        if(mx_socket_accept(&sock, &newsocket)) {
+        if (mx_socket_accept(&sock, &newsocket)) {
             return Socket(newsocket);
         }
-        if(errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK || errno == ECONNABORTED || errno == EINVAL || errno == EBADF)
+        if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK || errno == ECONNABORTED || errno == EINVAL || errno == EBADF)
             return std::nullopt;
 
         throw Exception("Error accept socket failed.\n");
+    }
+
+    bool Socket::bind(std::string_view port) {
+        if(!mx_socket_bind(&sock, std::string(port).c_str())) {
+            throw Exception("Could not bind UDP socket.");
+        }
+        return true;
     }
 
     bool Socket::setblocking(bool block) {
@@ -104,7 +111,7 @@ namespace mxnetwork {
     }
 
     void Socket::close() {
-        if(sock.sockfd >= 0)
+        if (sock.sockfd >= 0)
             mx_socket_close(&sock);
     }
 
@@ -133,26 +140,25 @@ namespace mxnetwork {
     }
 
     ssize_t Socket::sendto(const void *buf, size_t bytes) {
-        if(type == SocketType::TYPE_INET_DGRAM)
+        if (type == SocketType::TYPE_INET_DGRAM)
             return mx_socket_sendto(&sock, buf, bytes);
-        else if(type == SocketType::TYPE_UNIX_DGRAM)
+        else if (type == SocketType::TYPE_UNIX_DGRAM)
             return mx_socket_unix_sendto(&sock, buf, bytes);
         return 0;
     }
     ssize_t Socket::recvfrom(void *buf, size_t bytes) {
-        if(type == SocketType::TYPE_INET_DGRAM)
+        if (type == SocketType::TYPE_INET_DGRAM)
             return mx_socket_recvfrom(&sock, buf, bytes);
-        else if(type == SocketType::TYPE_UNIX_DGRAM)
+        else if (type == SocketType::TYPE_UNIX_DGRAM)
             return mx_socket_unix_recvfrom(&sock, buf, bytes);
         return 0;
     }
 
-
     void Socket::setsocket(const MXSocket &s) {
-        if(!mx_socket_init(&sock))
+        if (!mx_socket_init(&sock))
             return;
         sock.sockfd = s.sockfd;
         sock.blocking = s.blocking;
         sock.addrlen = s.addrlen;
     }
-}
+} // namespace mxnetwork

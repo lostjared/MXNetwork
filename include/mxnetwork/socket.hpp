@@ -27,6 +27,7 @@ namespace mxnetwork {
         bool listen(std::string_view port, int backlog);
         bool listen_unix(std::string_view path, int backlog);
         bool setblocking(bool block);
+        bool bind(std::string_view port);
         std::optional<Socket> accept();
 
         ssize_t read(void *buf, size_t bytes, int flags);
