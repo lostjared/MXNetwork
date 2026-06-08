@@ -52,13 +52,13 @@ namespace mxnetwork {
         return *this;
     }
 
-    bool Socket::connect(const std::string_view &host, const std::string_view port) {
+    bool Socket::connect(const std::string_view host, const std::string_view port) {
         if(type == SocketType::TYPE_INET)
             return mx_socket_connect(&sock, std::string(host).c_str(), std::string(port).c_str(), SOCK_STREAM);
         return false;
     }
 
-    bool Socket::connect_unix(const std::string_view &path) {
+    bool Socket::connect_unix(const std::string_view path) {
         if(type == SocketType::TYPE_INET)
             return mx_socket_unix_connect(&sock, std::string(path).c_str());
         return false;

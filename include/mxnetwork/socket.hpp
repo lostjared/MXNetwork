@@ -21,8 +21,8 @@ namespace mxnetwork {
         Socket& operator=(const Socket &s);
         Socket& operator=(Socket &&s);
         int sockfd() const;
-        bool connect(const std::string_view &host, const std::string_view port);
-        bool connect_unix(const std::string_view &path);
+        bool connect(const std::string_view host, const std::string_view port);
+        bool connect_unix(const std::string_view path);
         bool listen(std::string_view port, int backlog);
         bool listen_unix(std::string_view path, int backlog);
         bool setblocking(bool block);
