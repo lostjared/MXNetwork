@@ -137,9 +137,7 @@ else()
 message(STATUS "C++20 support confirmed.")
 endif()
 message(STATUS "")
-
 find_package(Threads REQUIRED)
-
 add_library(mxnetwork STATIC src/mxsocket.cpp src/socket.cpp src/exception.cpp)
 target_link_libraries(mxnetwork PUBLIC Threads::Threads)
 target_include_directories(mxnetwork PUBLIC include)

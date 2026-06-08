@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: " << argv[0] << " <port>\n";
         return EXIT_FAILURE;
     }
-    struct sigaction sa;
+    struct sigaction sa = {};
     sa.sa_handler = exit_signal;
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, nullptr);

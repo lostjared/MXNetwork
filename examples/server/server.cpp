@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    struct sigaction sa;
+    struct sigaction sa = {};
     sa.sa_handler = exit_signal;
     sa.sa_flags = 0;
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
