@@ -245,7 +245,7 @@ void mx_socket_close(MXSocket *sock) {
 }
 
 [[nodiscard]] bool mx_socket_bind(MXSocket *sock, const char *port) {
-    if(!mx_socket_init(sock))
+    if (!mx_socket_init(sock))
         return false;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct addrinfo hints = {0};
@@ -259,7 +259,7 @@ void mx_socket_close(MXSocket *sock) {
         return false;
     }
     bool set_value = false;
-    for(rp = result; rp != nullptr; rp = rp->ai_next) {
+    for (rp = result; rp != nullptr; rp = rp->ai_next) {
         if (bind(sockfd, rp->ai_addr, rp->ai_addrlen) == 0) {
             memcpy(&sock->inet, rp->ai_addr, rp->ai_addrlen);
             sock->addrlen = rp->ai_addrlen;
@@ -268,7 +268,7 @@ void mx_socket_close(MXSocket *sock) {
         }
     }
     freeaddrinfo(result);
-    if(!set_value)
+    if (!set_value)
         return false;
     sock->sockfd = sockfd;
     return true;

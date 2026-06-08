@@ -92,7 +92,7 @@ namespace mxnetwork {
     }
 
     bool Socket::bind(std::string_view port) {
-        if(!mx_socket_bind(&sock, std::string(port).c_str())) {
+        if (!mx_socket_bind(&sock, std::string(port).c_str())) {
             throw Exception("Could not bind UDP socket.");
         }
         return true;

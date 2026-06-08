@@ -1,26 +1,32 @@
 #ifndef _MXSOCKET_H__
 #define _MXSOCKET_H__
 
-#include "mxnetwork/mxsocket.hpp"
 #include "mxnetwork/exception.hpp"
+#include "mxnetwork/mxsocket.hpp"
+#include <optional>
 #include <string>
 #include <string_view>
-#include <optional>
 
 namespace mxnetwork {
 
-    enum class SocketType { TYPE_INVALID=0, TYPE_INET, TYPE_UNIX, TYPE_INET_DGRAM, TYPE_UNIX_DGRAM};
+    enum class SocketType {
+        TYPE_INVALID = 0,
+        TYPE_INET,
+        TYPE_UNIX,
+        TYPE_INET_DGRAM,
+        TYPE_UNIX_DGRAM
+    };
 
     class Socket {
-    public:
+      public:
         Socket(SocketType type) noexcept;
         virtual ~Socket();
         Socket(int sockfd, SocketType type);
         Socket(const MXSocket &s);
         Socket(const Socket &s) = delete;
         Socket(Socket &&s);
-        Socket& operator=(const Socket &s) = delete;
-        Socket& operator=(Socket &&s);
+        Socket &operator=(const Socket &s) = delete;
+        Socket &operator=(Socket &&s);
         int sockfd() const;
         bool connect(const std::string_view host, const std::string_view port);
         bool connect_unix(const std::string_view path);
@@ -42,14 +48,13 @@ namespace mxnetwork {
         bool is_open() const;
         void close();
 
-    protected:
+      protected:
         MXSocket sock;
         SocketType type;
 
-    private:
+      private:
         void setsocket(const MXSocket &s);
     };
-}
+} // namespace mxnetwork
 
 #endif
-

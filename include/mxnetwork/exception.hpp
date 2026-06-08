@@ -1,18 +1,19 @@
 #ifndef _MXNET_EXCEPT
 #define _MXNET_EXCEPT
 
-#include<string>
-#include<iostream>
+#include <iostream>
+#include <string>
 
 namespace mxnetwork {
 
     class Exception {
-    public:
+      public:
         Exception(const std::string &s) : txt{s} {}
         std::string text() const;
-    protected:
+
+      protected:
         std::string txt;
     };
-}
+} // namespace mxnetwork
 
 #endif

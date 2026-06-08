@@ -50,7 +50,8 @@ int main(int argc, char **argv) {
                         } else {
                             std::cerr << "Error reading stream.\n";
                         }
-                    }, std::move(*s));
+                    },
+                                  std::move(*s));
                     t.detach();
                 } else {
                     if (errno == EINTR)
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
-    } catch(const mxnetwork::Exception &s) {
+    } catch (const mxnetwork::Exception &s) {
         std::cerr << "Exception: " << s.text() << "\n";
         return EXIT_FAILURE;
     }
