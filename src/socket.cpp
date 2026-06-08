@@ -85,8 +85,9 @@ namespace mxnetwork {
         if(mx_socket_accept(&sock, &newsocket)) {
             return Socket(newsocket);
         }
-        if(errno == EINTR)
+        if(errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK || errno == ECONNABORTED || errno == EINVAL || errno == EBADF)
             return std::nullopt;
+
         throw Exception("Error accept socket failed.\n");
     }
 
