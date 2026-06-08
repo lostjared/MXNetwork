@@ -37,6 +37,7 @@ ssize_t mx_socket_send(MXSocket *s, const void *data, size_t len, int flags);
 [[nodiscard]] bool mx_socket_is_open(const MXSocket *s);
 [[nodiscard]] bool mx_socket_readline(MXSocket *s, char **buffer, size_t *len);
 [[nodiscard]] bool mx_socket_bind(MXSocket *s, const char *port);
+[[nodiscard]] bool mx_socket_unix_bind(MXSocket *s, const char *path);
 ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes);
 ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes);
 ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t bytes);

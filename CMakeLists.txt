@@ -131,5 +131,7 @@ add_subdirectory(examples/client)
 add_subdirectory(examples/server)
 add_subdirectory(examples/udp-recv)
 add_subdirectory(examples/udp-send)
+add_subdirectory(examples/unix-udp-recv)
+add_subdirectory(examples/unix-udp-send)
 
 

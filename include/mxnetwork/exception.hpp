@@ -9,6 +9,7 @@ namespace mxnetwork {
       public:
         Exception(const std::string &s) : txt{s} {}
         std::string text() const;
+
       protected:
         std::string txt;
     };

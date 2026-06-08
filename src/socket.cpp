@@ -98,6 +98,12 @@ namespace mxnetwork {
         return true;
     }
 
+    bool Socket::bind_unix(std::string_view path) {
+        if (!mx_socket_unix_bind(&sock, std::string(path).c_str()))
+            return false;
+        return true;
+    }
+
     bool Socket::setblocking(bool block) {
         return mx_socket_set_blocking(&sock, block);
     }

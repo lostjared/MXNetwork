@@ -245,7 +245,7 @@ void mx_socket_close(MXSocket *sock) {
 }
 
 [[nodiscard]] bool mx_socket_bind(MXSocket *sock, const char *port) {
-    if (!mx_socket_init(sock))
+    if (!mx_socket_init(sock) || port == nullptr)
         return false;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct addrinfo hints = {0};
@@ -271,6 +271,31 @@ void mx_socket_close(MXSocket *sock) {
     if (!set_value)
         return false;
     sock->sockfd = sockfd;
+    return true;
+}
+
+[[nodiscard]] bool mx_socket_unix_bind(MXSocket *s, const char *path) {
+    if (!mx_socket_init(s) || path == nullptr)
+        return false;
+
+    int sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (sockfd == -1) {
+        perror("socket");
+        return false;
+    }
+    unlink(path);
+    struct sockaddr_un caddy;
+    memset(&caddy, 0, sizeof(struct sockaddr_un));
+    caddy.sun_family = AF_UNIX;
+    strncpy(caddy.sun_path, path, sizeof(caddy.sun_path) - 1);
+    if (bind(sockfd, (struct sockaddr *)&caddy, sizeof(caddy)) == -1) {
+        perror("bind");
+        close(sockfd);
+        return false;
+    }
+    s->sun = caddy;
+    s->addrlen = sizeof(caddy);
+    s->sockfd = sockfd;
     return true;
 }
 
@@ -384,6 +409,9 @@ ssize_t mx_socket_send(MXSocket *sock, const void *buf, size_t len, int flags) {
 }
 
 ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes) {
+    if (sock == nullptr || buf == nullptr || bytes == 0)
+        return -1;
+
     const char *ptr = (const char *)buf;
     size_t left = bytes;
     while (left > 0) {
@@ -401,6 +429,9 @@ ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes) {
 }
 
 ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
+    if (sock == nullptr || buf == nullptr || bytes == 0)
+        return -1;
+
     char *ptr = (char *)buf;
     size_t left = bytes;
     while (left > 0) {
@@ -424,11 +455,17 @@ void mx_socket_ignore_pipe_signal() {
 }
 
 ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0)
+        return -1;
+
     ssize_t bytes = 0;
     bytes = sendto(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&sock->inet, sock->addrlen);
     return bytes;
 }
 ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0)
+        return -1;
+
     ssize_t bytes = 0;
     socklen_t len = sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
@@ -437,11 +474,17 @@ ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
 }
 
 ssize_t mx_socket_unix_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0)
+        return -1;
+
     ssize_t bytes = 0;
     bytes = sendto(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&sock->sun, sock->addrlen);
     return bytes;
 }
 ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0)
+        return -1;
+
     ssize_t bytes = 0;
     socklen_t len = sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
