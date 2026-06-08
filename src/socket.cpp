@@ -85,7 +85,7 @@ namespace mxnetwork {
         return false;
     }
 
-    std::optional<Socket> Socket::accept() {
+    [[nodiscard]] std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
         if(!mx_socket_init(&newsocket))
             return std::nullopt;

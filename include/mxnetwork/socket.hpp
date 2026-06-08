@@ -35,7 +35,7 @@ namespace mxnetwork {
         bool setblocking(bool block);
         bool bind(std::string_view port);
         bool bind_unix(std::string_view path);
-        std::optional<Socket> accept();
+        [[nodiscard]] std::optional<Socket> accept();
 
         ssize_t read(void *buf, size_t bytes, int flags);
         bool readline(char **buffer, size_t *len);
