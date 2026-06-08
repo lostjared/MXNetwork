@@ -1,2 +1,3 @@
 # MXNetwork
-C++ Sockets Library
+C++ Sockets Library written by a human.
+
