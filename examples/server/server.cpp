@@ -32,8 +32,8 @@ int main(int argc, char **argv) {
         if (sock.listen(argv[1], 5)) {
             active_loop.store(true);
             while (active_loop.load()) {
-                mxnetwork::Socket s(mxnetwork::SocketType::TYPE_INET);
-                if (sock.accept(s)) {
+                std::optional<mxnetwork::Socket> s = sock.accept();
+                if (s) {
                     std::thread t([&](mxnetwork::Socket sfd) {
                         char buffer[256];
                         ssize_t bytes = 0;
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
                             std::cerr << "Error reading stream.\n";
                         }
                         sfd.close();
-                    }, std::move(s));
+                    }, std::move(*s));
                     t.detach();
                 } else {
                     if (errno == EINTR)

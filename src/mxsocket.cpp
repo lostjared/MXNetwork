@@ -1,5 +1,4 @@
 #include "mxnetwork/mxsocket.hpp"
-#include <sys/un.h>
 #include <unistd.h>
 #include <signal.h>
 
@@ -34,6 +33,7 @@
         return false;
     }
     sock->sockfd = sockfd;
+    sock->sun = addr;
     return true;
 }
 
@@ -58,6 +58,7 @@
         return false;
     }
     sock->sockfd = sockfd;
+    sock->sun = addr;
     return true;
 }
 
@@ -121,6 +122,7 @@
         }
         sock->sockfd = sfd;
         sock->addrlen = rp->ai_addrlen;
+        memcpy(&sock->inet, rp->ai_addr, rp->ai_addrlen);
     } else {
         if (sfd >= 0)
             close(sfd);
@@ -160,6 +162,8 @@
     output->sockfd = newfd;
     output->addrlen = input->addrlen;
     output->blocking = input->blocking;
+    output->sun = input->sun;
+    output->inet = input->inet;
     return true;
 }
 
@@ -232,6 +236,7 @@ void mx_socket_close(MXSocket *sock) {
     if (rp != nullptr) {
         sock->sockfd = sfd;
         sock->addrlen = rp->ai_addrlen;
+        memcpy(&sock->inet, rp->ai_addr, rp->ai_addrlen);
     } else {
         freeaddrinfo(rt);
         if (sfd >= 0)
@@ -390,6 +395,32 @@ ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
 
 void mx_socket_ignore_pipe_signal() {
     signal(SIGPIPE, SIG_IGN);
+}
+
+ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
+    ssize_t bytes = 0;
+    bytes = sendto(sock->sockfd, buf,src_bytes, 0, (struct sockaddr *)&sock->inet, sock->addrlen);
+    return bytes;
+}
+ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
+    ssize_t bytes = 0;
+    socklen_t len = sizeof(struct sockaddr_storage);
+    struct sockaddr_storage caddr;
+    bytes = recvfrom(sock->sockfd, buf,src_bytes, 0,(struct sockaddr *)&caddr, &len);
+    return bytes;
+}
+
+ssize_t mx_socket_unix_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
+    ssize_t bytes = 0;
+    bytes = sendto(sock->sockfd, buf,src_bytes, 0, (struct sockaddr *)&sock->sun, sock->addrlen);
+    return bytes;
+}
+ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
+    ssize_t bytes = 0;
+    socklen_t len = sizeof(struct sockaddr_storage);
+    struct sockaddr_storage caddr;
+    bytes = recvfrom(sock->sockfd, buf,src_bytes, 0,(struct sockaddr *)&caddr, &len);
+    return bytes;
 }
 
 

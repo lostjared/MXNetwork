@@ -12,11 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
+
 typedef struct {
     int sockfd;
     socklen_t addrlen;
     bool blocking;
+    struct sockaddr_un sun;
+    struct sockaddr_in inet;
 } MXSocket;
 
 [[nodiscard]] bool mx_socket_init(MXSocket *s);
@@ -34,6 +38,10 @@ ssize_t mx_socket_send(MXSocket *s, const void *data, size_t len, int flags);
 [[nodiscard]] bool mx_socket_readline(MXSocket *s, char **buffer, size_t *len);
 ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes);
 ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes);
+ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t bytes);
+ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t bytes);
+ssize_t mx_socket_unix_sendto(MXSocket *sock, const void *buf, size_t bytes);
+ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t bytes);
 void mx_socket_ignore_pipe_signal();
 
 #endif

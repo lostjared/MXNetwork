@@ -34,22 +34,10 @@ namespace mxnetwork {
         setsocket(s);
     }
 
-
-    Socket::Socket(const Socket &s) {
-        setsocket(s.sock);
-        type = s.type;
-    }
-
     Socket::Socket(Socket &&s) {
         setsocket(s.sock);
         type = s.type;
         s.sock.sockfd = -1;
-    }
-
-    Socket& Socket::operator=(const Socket &s) {
-        setsocket(s.sock);
-        type = s.type;
-        return *this;
     }
 
     Socket& Socket::operator=(Socket &&s) {
@@ -92,15 +80,13 @@ namespace mxnetwork {
         return false;
     }
 
-    bool Socket::accept(Socket &s) {
+    std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
         if(mx_socket_accept(&sock, &newsocket)) {
-            s = Socket(newsocket);
-            return true;
+            return Socket(newsocket);
         }
         if(errno == EINTR)
-            return false;
-
+            return std::nullopt;
         throw Exception("Error accept socket failed.\n");
     }
 
@@ -146,11 +132,17 @@ namespace mxnetwork {
     }
 
     ssize_t Socket::sendto(const void *buf, size_t bytes) {
-
+        if(type == SocketType::TYPE_INET_DGRAM)
+            return mx_socket_sendto(&sock, buf, bytes);
+        else if(type == SocketType::TYPE_UNIX_DGRAM)
+            return mx_socket_unix_sendto(&sock, buf, bytes);
         return 0;
     }
     ssize_t Socket::recvfrom(void *buf, size_t bytes) {
-
+        if(type == SocketType::TYPE_INET_DGRAM)
+            return mx_socket_recvfrom(&sock, buf, bytes);
+        else if(type == SocketType::TYPE_UNIX_DGRAM)
+            return mx_socket_unix_recvfrom(&sock, buf, bytes);
         return 0;
     }
 

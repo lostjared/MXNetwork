@@ -3,8 +3,9 @@
 
 #include "mxnetwork/mxsocket.hpp"
 #include "mxnetwork/exception.hpp"
-#include<string>
-#include<string_view>
+#include <string>
+#include <string_view>
+#include <optional>
 
 namespace mxnetwork {
 
@@ -16,9 +17,9 @@ namespace mxnetwork {
         virtual ~Socket();
         Socket(int sockfd, SocketType type);
         Socket(const MXSocket &s);
-        Socket(const Socket &s);
+        Socket(const Socket &s) = delete;
         Socket(Socket &&s);
-        Socket& operator=(const Socket &s);
+        Socket& operator=(const Socket &s) = delete;
         Socket& operator=(Socket &&s);
         int sockfd() const;
         bool connect(const std::string_view host, const std::string_view port);
@@ -26,7 +27,7 @@ namespace mxnetwork {
         bool listen(std::string_view port, int backlog);
         bool listen_unix(std::string_view path, int backlog);
         bool setblocking(bool block);
-        bool accept(Socket &s);
+        std::optional<Socket> accept();
 
         ssize_t read(void *buf, size_t bytes, int flags);
         bool readline(char **buffer, size_t *len);
