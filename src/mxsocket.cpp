@@ -1,14 +1,15 @@
 #include "mxnetwork/mxsocket.hpp"
 #include <sys/un.h>
 #include <unistd.h>
+#include <signal.h>
 
-[[nodiscard]] bool mx_socket_unix_listen(MXSocket *sock, const char *path, int backlog) {
+[[nodiscard]] bool mx_socket_unix_listen(MXSocket *sock, const char *path, int backlog, int type) {
     if(path == nullptr)
         return false;
     if(!mx_socket_init(sock))
         return false;
     struct sockaddr_un addr;
-    int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    int sockfd = socket(AF_UNIX, type, 0);
     if (sockfd == -1) {
         perror("socket");
         return false;
@@ -36,7 +37,7 @@
     return true;
 }
 
-[[nodiscard]] bool mx_socket_unix_connect(MXSocket *sock, const char *path) {
+[[nodiscard]] bool mx_socket_unix_connect(MXSocket *sock, const char *path, int type) {
     if (path == nullptr)
         return false;
     if(!mx_socket_init(sock))
@@ -45,7 +46,7 @@
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    sockfd = socket(AF_UNIX, type, 0);
     if (sockfd == -1) {
         perror("socket");
         return false;
@@ -61,7 +62,7 @@
 }
 
 
-[[nodiscard]] bool mx_socket_listen(MXSocket *sock, const char *port, int backlog) {
+[[nodiscard]] bool mx_socket_listen(MXSocket *sock, const char *port, int backlog, int type) {
     if (port == nullptr)
         return false;
 
@@ -79,7 +80,7 @@
     hints.ai_canonname = nullptr;
     hints.ai_addr = nullptr;
     hints.ai_next = nullptr;
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = type;
     hints.ai_family = AF_INET;
     hints.ai_flags = AI_PASSIVE;
     s = getaddrinfo(nullptr, port, &hints, &rt);
@@ -385,6 +386,10 @@ ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
         ptr += bytes_read;
     }
     return (ssize_t)(bytes - left);
+}
+
+void mx_socket_ignore_pipe_signal() {
+    signal(SIGPIPE, SIG_IGN);
 }
 
 

@@ -26,42 +26,44 @@ int main(int argc, char **argv) {
         perror("sigaction");
         return EXIT_FAILURE;
     }
-
-    mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
-    if (sock.listen(argv[1], 5)) {
-        active_loop.store(true);
-        while (active_loop.load()) {
-            mxnetwork::Socket s(mxnetwork::SocketType::TYPE_INET);
-            if (sock.accept(s)) {
-                std::thread t([&](mxnetwork::Socket sfd) {
-                    char buffer[256];
-                    ssize_t bytes = 0;
-                    if ((bytes = sfd.read_all(buffer, 255)) > 0) {
-                        buffer[bytes] = '\0';
-                        std::string value{buffer};
-                        if (value.find("exit") != std::string::npos) {
-                            active_loop.store(false);
-                            std::cerr << argv[0] << ": Exiting..\n";
-                            sfd.close();
-                            sock.close();
-                            exit(EXIT_SUCCESS);
+    mx_socket_ignore_pipe_signal();
+    try {
+        mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
+        if (sock.listen(argv[1], 5)) {
+            active_loop.store(true);
+            while (active_loop.load()) {
+                mxnetwork::Socket s(mxnetwork::SocketType::TYPE_INET);
+                if (sock.accept(s)) {
+                    std::thread t([&](mxnetwork::Socket sfd) {
+                        char buffer[256];
+                        ssize_t bytes = 0;
+                        if ((bytes = sfd.read_all(buffer, 255)) > 0) {
+                            buffer[bytes] = '\0';
+                            std::string value{buffer};
+                            if (value.find("exit") != std::string::npos) {
+                                active_loop.store(false);
+                                std::cerr << argv[0] << ": Exiting..\n";
+                                sfd.close();
+                                sock.close();
+                                exit(EXIT_SUCCESS);
+                            }
+                            std::cout << value << "\n";
+                        } else {
+                            std::cerr << "Error reading stream.\n";
                         }
-                        std::cout << value << "\n";
-                    } else {
-                        std::cerr << "Error reading stream.\n";
-                    }
-                    sfd.close();
-                },
-                              s);
-                t.detach();
-            } else {
-                if (errno == EINTR)
-                    continue;
-                break;
+                        sfd.close();
+                    }, std::move(s));
+                    t.detach();
+                } else {
+                    if (errno == EINTR)
+                        continue;
+                    break;
+                }
             }
         }
-        std::cout << "\nsocket closed.\n";
-        sock.close();
+    } catch(const mxnetwork::Exception &s) {
+        std::cerr << "Exception: " << s.text() << "\n";
+        return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }

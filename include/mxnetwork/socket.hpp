@@ -8,14 +8,14 @@
 
 namespace mxnetwork {
 
-    enum SocketType { TYPE_INET=1, TYPE_UNIX };
+    enum class SocketType { TYPE_INVALID=0, TYPE_INET, TYPE_UNIX, TYPE_INET_DGRAM, TYPE_UNIX_DGRAM};
 
     class Socket {
     public:
-        Socket(SocketType type);
+        Socket(SocketType type) noexcept;
         virtual ~Socket();
         Socket(int sockfd, SocketType type);
-        Socket(MXSocket &s);
+        Socket(const MXSocket &s);
         Socket(const Socket &s);
         Socket(Socket &&s);
         Socket& operator=(const Socket &s);
@@ -33,6 +33,8 @@ namespace mxnetwork {
         ssize_t write(const void *buf, size_t bytes, int flags);
         ssize_t read_all(void *buf, size_t bytes);
         ssize_t write_all(const void *buf, size_t bytes);
+        ssize_t sendto(const void *buf, size_t bytes);
+        ssize_t recvfrom(void *buf, size_t bytes);
 
         bool valid() const;
         bool is_open() const;

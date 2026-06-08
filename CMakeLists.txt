@@ -129,5 +129,6 @@ add_library(libmxnetwork::mxnetwork ALIAS mxnetwork)
 add_subdirectory(examples/download)
 add_subdirectory(examples/client)
 add_subdirectory(examples/server)
+add_subdirectory(examples/udp-recv)
 
 

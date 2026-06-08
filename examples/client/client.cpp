@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
             std::cout << "enter data: ";
             std::getline(std::cin, data);
             sock.write_all(data.c_str(), data.length());
-            sock.close();
             std::cout << "Sent " << data.length() << " bytes.\n";
         } else {
             std::cout << "client: Error connecting..\n";
