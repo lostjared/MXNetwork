@@ -130,5 +130,6 @@ add_subdirectory(examples/download)
 add_subdirectory(examples/client)
 add_subdirectory(examples/server)
 add_subdirectory(examples/udp-recv)
+add_subdirectory(examples/udp-send)
 
 

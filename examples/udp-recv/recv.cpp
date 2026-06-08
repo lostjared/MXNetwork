@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
                 ssize_t bytes = sock.recvfrom(buffer.data(), buffer.size());
                 if (bytes > 0) {
                     std::cout << "Received " << bytes << " bytes.\n";
+                    std::string data(buffer.begin(), buffer.end());
+                    std::cout << "Data: " << data;
                 } else if (bytes < 0) {
                     if (errno == EINTR)
                         continue;
