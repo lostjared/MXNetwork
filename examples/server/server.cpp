@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     try {
+        mx_socket_ignore_pipe_signal();
         mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
         if (sock.listen(argv[1], 5)) {
             active_loop.store(true);
