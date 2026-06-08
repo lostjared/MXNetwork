@@ -20,16 +20,36 @@ message(STATUS "Debug Enabled")
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    message(STATUS "using GNU GCC")
+    add_compile_options(
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Warray-bounds=2
+        -Wshadow
+        -Wconversion
+    )
+    add_compile_options(
+        "$<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer;-g;>"
+        "$<$<CONFIG:Release>:-O3;-march=native;-flto>"
+    )
+    add_link_options(
+        "$<$<CONFIG:Debug>:-fsanitize=address;-no-pie>"
+        "$<$<CONFIG:Release>:-flto>"
+    )
+endif()
 else()
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-message(STATUS "Release mode enabled")
+    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+    message(STATUS "Release mode enabled")
+    add_compile_options(-Wall -pedantic)
 endif()
 if(UNIX AND NOT APPLE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
-add_compile_options(-Wall -pedantic)
+
 message(STATUS "")
 message(STATUS "=== Checking System Headers ===")
 check_include_file_cxx(iostream HAVE_IOSTREAM)

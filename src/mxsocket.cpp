@@ -248,7 +248,7 @@ void mx_socket_close(MXSocket *sock) {
     if (!mx_socket_init(sock) || port == nullptr)
         return false;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    struct addrinfo hints = {0};
+    struct addrinfo hints = {};
     struct addrinfo *result = nullptr;
     struct addrinfo *rp = nullptr;
     hints.ai_family = AF_UNSPEC;
