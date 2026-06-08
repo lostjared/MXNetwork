@@ -30,20 +30,25 @@ namespace mxnetwork {
         type = stype;
     }
 
-    Socket::Socket(const MXSocket &s) {
+    Socket::Socket(const MXSocket &s, SocketType stype) {
+        type = stype;
         setsocket(s);
     }
 
     Socket::Socket(Socket &&s) {
-        setsocket(s.sock);
         type = s.type;
+        setsocket(s.sock);
         s.sock.sockfd = -1;
     }
 
     Socket &Socket::operator=(Socket &&s) {
-        setsocket(s.sock);
-        type = s.type;
-        s.sock.sockfd = -1;
+        if(this != &s) {
+            if(sock.sockfd >= 0)
+                ::close(sock.sockfd);
+            type = s.type;
+            setsocket(s.sock);
+            s.sock.sockfd = -1;
+        }
         return *this;
     }
 
@@ -52,7 +57,6 @@ namespace mxnetwork {
             return mx_socket_connect(&sock, std::string(host).c_str(), std::string(port).c_str(), SOCK_STREAM);
         else if (type == SocketType::TYPE_INET_DGRAM)
             return mx_socket_connect(&sock, std::string(host).c_str(), std::string(port).c_str(), SOCK_DGRAM);
-
         return false;
     }
 
@@ -83,7 +87,7 @@ namespace mxnetwork {
     std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
         if (mx_socket_accept(&sock, &newsocket)) {
-            return Socket(newsocket);
+            return Socket(newsocket, type);
         }
         if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK || errno == ECONNABORTED || errno == EINVAL || errno == EBADF)
             return std::nullopt;
@@ -166,5 +170,11 @@ namespace mxnetwork {
         sock.sockfd = s.sockfd;
         sock.blocking = s.blocking;
         sock.addrlen = s.addrlen;
+        if(type == SocketType::TYPE_INET || type == SocketType::TYPE_INET_DGRAM) {
+            size_t len_size = (s.addrlen > sizeof(sock.inet)) ? sizeof(sock.inet) : s.addrlen;
+            memcpy(&sock.inet, &s.inet, len_size);
+        }
+        else if(type == SocketType::TYPE_UNIX || type == SocketType::TYPE_UNIX_DGRAM)
+            sock.sun = s.sun;
     }
 } // namespace mxnetwork

@@ -22,7 +22,7 @@ namespace mxnetwork {
         Socket(SocketType type) noexcept;
         virtual ~Socket();
         Socket(int sockfd, SocketType type);
-        Socket(const MXSocket &s);
+        Socket(const MXSocket &s, SocketType type);
         Socket(const Socket &s) = delete;
         Socket(Socket &&s);
         Socket &operator=(const Socket &s) = delete;
