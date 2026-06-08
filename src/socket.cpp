@@ -43,9 +43,9 @@ namespace mxnetwork {
     }
 
     Socket &Socket::operator=(Socket &&s) noexcept {
-        if(this != &s) {
+        if (this != &s) {
             type = s.type;
-            if(sock.sockfd >= 0)
+            if (sock.sockfd >= 0)
                 ::close(sock.sockfd);
             setsocket(s.sock);
             s.sock.sockfd = -1;
@@ -87,7 +87,7 @@ namespace mxnetwork {
 
     [[nodiscard]] std::optional<Socket> Socket::accept() {
         MXSocket newsocket;
-        if(!mx_socket_init(&newsocket))
+        if (!mx_socket_init(&newsocket))
             return std::nullopt;
 
         if (mx_socket_accept(&sock, &newsocket)) {
@@ -174,11 +174,10 @@ namespace mxnetwork {
         sock.sockfd = s.sockfd;
         sock.blocking = s.blocking;
         sock.addrlen = s.addrlen;
-        if(type == SocketType::TYPE_INET || type == SocketType::TYPE_INET_DGRAM) {
+        if (type == SocketType::TYPE_INET || type == SocketType::TYPE_INET_DGRAM) {
             size_t len_size = (s.addrlen > sizeof(sock.inet)) ? sizeof(sock.inet) : s.addrlen;
             memcpy(&sock.inet, &s.inet, len_size);
-        }
-        else if(type == SocketType::TYPE_UNIX || type == SocketType::TYPE_UNIX_DGRAM)
+        } else if (type == SocketType::TYPE_UNIX || type == SocketType::TYPE_UNIX_DGRAM)
             sock.sun = s.sun;
     }
 } // namespace mxnetwork
