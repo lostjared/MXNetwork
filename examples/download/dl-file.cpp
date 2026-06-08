@@ -118,6 +118,7 @@ int main(int argc, char **argv) {
     }
 
     try {
+        mx_socket_ignore_pipe_signal();
         mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
         if (sock.connect(argv[1], argv[2])) {
             printf("dl: connected.\n");
