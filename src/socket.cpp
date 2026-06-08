@@ -44,6 +44,8 @@ namespace mxnetwork {
     Socket &Socket::operator=(Socket &&s) {
         if(this != &s) {
             type = s.type;
+            if(sock.sockfd >= 0)
+                ::close(sock.sockfd);
             setsocket(s.sock);
             s.sock.sockfd = -1;
         }
