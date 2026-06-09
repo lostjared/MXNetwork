@@ -14,7 +14,7 @@ include(CheckSymbolExists)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
 
-if(CMAKE_BUILD_TYPE STREQUAL DEBUG OR CMAKE_BUILD_TYPE STREQUAL Debug)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 add_compile_definitions(DEBUG_MODE)
 message(STATUS "Debug Enabled")
 
@@ -31,7 +31,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wconversion
     )
     add_compile_options(
-        "$<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer>"
+        "$<$<CONFIG:Debug>:-fsanitize=address>"
+        "$<$<CONFIG:Debug>:-fno-omit-frame-pointer>"
     )
     add_link_options(
         "$<$<CONFIG:Debug>:-fsanitize=address>"
@@ -48,6 +49,8 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 
+
+set(CMAKE_REQUIRED_FLAGS "-std=c++20")
 message(STATUS "")
 message(STATUS "=== Checking System Headers ===")
 check_include_file_cxx(iostream HAVE_IOSTREAM)
@@ -102,6 +105,7 @@ message(FATAL_ERROR "Missing required C++ standard headers: ${MISSING_STD_HEADER
 "Please ensure you have a C++20 compliant compiler installed.")
 endif()
 message(STATUS "All required C++ standard headers found.")
+
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(stdio.h HAVE_STDIO_H)
 check_include_file(stdint.h HAVE_STDINT_H)
@@ -117,7 +121,6 @@ check_include_file(netinet/in.h HAVE_INET_H)
 check_include_file(stdbool.h HAVE_BOOL_H)
 check_include_file(signal.h HAVE_SIGNAL_H)
 check_include_file(errno.h HAVE_ERRNO_H)
-
 if(NOT HAVE_STDLIB_H OR NOT HAVE_STDIO_H OR NOT HAVE_STDINT_H OR NOT HAVE_SOCKET_H OR NOT HAVE_UN_H OR NOT HAVE_UNISTD_H OR NOT HAVE_ARPA_H OR NOT HAVE_FCNTL_H OR NOT HAVE_NETDB_H OR NOT HAVE_STAT_H OR NOT HAVE_INET_H OR NOT HAVE_BOOL_H OR NOT HAVE_SIGNAL_H OR NOT HAVE_ERRNO_H)
 message(FATAL_ERROR "Missing required C headers ")
 endif()
@@ -136,11 +139,15 @@ message(WARNING "C++20 support may not be fully available. Some features might n
 else()
 message(STATUS "C++20 support confirmed.")
 endif()
+unset(CMAKE_REQUIRED_FLAGS)
 message(STATUS "")
 find_package(Threads REQUIRED)
 add_library(mxnetwork STATIC src/mxsocket.cpp src/socket.cpp src/exception.cpp)
 target_link_libraries(mxnetwork PUBLIC Threads::Threads)
-target_include_directories(mxnetwork PUBLIC include)
+target_include_directories(mxnetwork PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 add_library(libmxnetwork::mxnetwork ALIAS mxnetwork)
 add_subdirectory(examples/download)
 add_subdirectory(examples/client)
@@ -149,5 +156,53 @@ add_subdirectory(examples/udp-recv)
 add_subdirectory(examples/udp-send)
 add_subdirectory(examples/unix-udp-recv)
 add_subdirectory(examples/unix-udp-send)
+
+set(MXNETWORK_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/mxnetwork")
+
+install(TARGETS mxnetwork
+    EXPORT mxnetworkTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/mxnetwork
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/mxnetworkConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mxnetworkConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/mxnetworkConfig.cmake
+    INSTALL_DESTINATION ${MXNETWORK_INSTALL_CMAKEDIR}
+)
+
+install(EXPORT mxnetworkTargets
+    FILE mxnetworkTargets.cmake
+    NAMESPACE mxnetwork::
+    DESTINATION ${MXNETWORK_INSTALL_CMAKEDIR}
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/mxnetworkConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/mxnetworkConfigVersion.cmake
+    DESTINATION ${MXNETWORK_INSTALL_CMAKEDIR}
+)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+    @ONLY
+)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+)
 
 
