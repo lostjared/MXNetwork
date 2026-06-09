@@ -19,8 +19,9 @@ namespace mxnetwork {
 
     class Socket {
       public:
+        Socket() = default;
         Socket(SocketType type) noexcept;
-        virtual ~Socket();
+        ~Socket() noexcept;
         Socket(int sockfd, SocketType type);
         Socket(const MXSocket &s, SocketType type) noexcept;
         Socket(const Socket &s) = delete;
@@ -51,7 +52,7 @@ namespace mxnetwork {
 
       protected:
         MXSocket sock;
-        SocketType type;
+        SocketType type = SocketType::TYPE_INVALID;
 
       private:
         void setsocket(const MXSocket &s);
