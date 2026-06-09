@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <mutex>
 
 std::atomic<bool> active{false};
 std::mutex mut;
