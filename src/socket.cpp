@@ -16,7 +16,6 @@ namespace mxnetwork {
 
     Socket::~Socket() noexcept {
         if (sock.sockfd >= 0) {
-            std::cout << "Socket: " << sock.sockfd << " closed.\n";
             close();
         }
     }
@@ -125,8 +124,14 @@ namespace mxnetwork {
     }
 
     void Socket::close() {
+        std::cout << "Socket: " << sock.sockfd << " closed.\n";
         if (sock.sockfd >= 0)
             mx_socket_close(&sock);
+        type = SocketType::TYPE_INVALID;
+    }
+
+    [[nodiscard]] SocketType Socket::socket_type() const {
+        return type;
     }
 
     [[nodiscard]] int Socket::sockfd() const {

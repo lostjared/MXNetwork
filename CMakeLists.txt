@@ -156,7 +156,7 @@ add_subdirectory(examples/udp-recv)
 add_subdirectory(examples/udp-send)
 add_subdirectory(examples/unix-udp-recv)
 add_subdirectory(examples/unix-udp-send)
-
+add_subdirectory(examples/relay)
 set(MXNETWORK_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/mxnetwork")
 
 install(TARGETS mxnetwork
