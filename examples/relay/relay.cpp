@@ -96,7 +96,7 @@ class Relay {
                         } else if (bytes == 0) {
                             (*sockets)[i].close();
                             std::cout << "relay: Disconnected safely.\n";
-                 cd ,,,'cd--vuild.--'       } else {
+                        } else {
                             buffer[bytes] = 0;
                             std::cout << "relay: Got message: " << buffer << "\n";
                             for (size_t z = 0; z < sockets->size(); ++z) {
