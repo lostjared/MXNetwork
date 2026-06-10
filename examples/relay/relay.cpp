@@ -2,12 +2,12 @@
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
 #include <poll.h>
 #include <signal.h>
 #include <string>
 #include <thread>
 #include <vector>
-#include <mutex>
 
 std::atomic<bool> active{false};
 std::mutex mut;

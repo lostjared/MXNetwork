@@ -1,26 +1,27 @@
 #ifndef RELAYWINDOW_HPP
 #define RELAYWINDOW_HPP
 
-#include <QWidget>
-#include <QTextEdit>
+#include "mxnetwork/socket.hpp"
 #include <QLineEdit>
 #include <QPushButton>
-#include <QVBoxLayout>
+#include <QTextEdit>
 #include <QTimer>
-#include "mxnetwork/socket.hpp"
+#include <QVBoxLayout>
+#include <QWidget>
 
 class RelayWindow : public QWidget {
     Q_OBJECT
-public:
+  public:
     explicit RelayWindow(QWidget *parent = nullptr);
     bool makeConnection(std::string_view user_name, std::string_view ip, std::string_view port);
     ~RelayWindow();
-signals:
+  signals:
     void messageSent(const QString &message);
-private slots:
+  private slots:
     void sendMessage();
     void readData();
-private:
+
+  private:
     QWidget *containerWidget;
     QVBoxLayout *layout;
     QTextEdit *messages;

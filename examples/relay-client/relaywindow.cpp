@@ -1,5 +1,5 @@
 #include "relaywindow.hpp"
-#include<poll.h>
+#include <poll.h>
 
 RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
     containerWidget = new QWidget(this);
@@ -22,11 +22,10 @@ RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
 }
 
 RelayWindow::~RelayWindow() {
-
 }
 
 bool RelayWindow::makeConnection(std::string_view cuser_name, std::string_view cip, std::string_view cport) {
-    if(!sockfd.connect(std::string(cip), std::string(cport))) {
+    if (!sockfd.connect(std::string(cip), std::string(cport))) {
         return false;
     }
     sockfd.setblocking(false);
@@ -49,7 +48,6 @@ void RelayWindow::readData() {
     pfd.fd = sockfd.sockfd();
     pfd.events = POLLIN;
 
-
     int value = poll(&pfd, 1, 100);
     if (value <= 0)
         return;
@@ -59,9 +57,9 @@ void RelayWindow::readData() {
 
     if (bytes < 0) {
         if (errno != EAGAIN || errno != EWOULDBLOCK) {
-                sockfd.close();
-                std::cout << "closing connection.\n";
-                exit(0);
+            sockfd.close();
+            std::cout << "closing connection.\n";
+            exit(0);
         }
     }
     buffer[bytes] = '\0';

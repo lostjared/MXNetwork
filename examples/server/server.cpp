@@ -50,7 +50,8 @@ int main(int argc, char **argv) {
                         } else {
                             std::cerr << "Error reading stream.\n";
                         }
-                    }, std::move(*s));
+                    },
+                                  std::move(*s));
                     t.detach();
                 } else {
                     if (errno == EINTR)
