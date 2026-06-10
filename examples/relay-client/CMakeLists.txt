@@ -1,4 +1,4 @@
-find_package(Qt6 COMPONENTS Core Widgets Gui REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets Network REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -10,5 +10,5 @@ add_executable(relay_client
 )
 
 target_link_libraries(relay_client
-	Qt6::Core Qt6::Widgets Qt6::Gui libmxnetwork::mxnetwork
+    PRIVATE Qt6::Core Qt6::Widgets Qt6::Network
 )

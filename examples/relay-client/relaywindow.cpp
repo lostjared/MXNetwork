@@ -1,5 +1,5 @@
 #include "relaywindow.hpp"
-#include <poll.h>
+#include <iostream>
 
 RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
     containerWidget = new QWidget(this);
@@ -19,60 +19,69 @@ RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
     connect(inputField, &QLineEdit::returnPressed, this, &RelayWindow::sendMessage);
     connect(sendButton, &QPushButton::clicked, this, &RelayWindow::sendMessage);
     setGeometry(100, 100, 640, 480);
+    connect(&socket, &QObject::destroyed, [](QObject* o) {
+        qDebug() << "Destroyed object:" << qobject_cast<QTcpSocket*>(o);
+    });
+    connect(&socket, &QTcpSocket::readyRead, this, &RelayWindow::readData);
 }
 
 RelayWindow::~RelayWindow() {
 }
 
-bool RelayWindow::makeConnection(std::string_view cuser_name, std::string_view cip, std::string_view cport) {
-    if (!sockfd.connect(std::string(cip), std::string(cport))) {
+bool RelayWindow::makeConnection(const QString &cuser_name, const QString &cip, const QString &cport) {
+    socket.connectToHost(cip, static_cast<quint16>(cport.toUInt()));
+    if (!socket.waitForConnected(3000)) {
+        qWarning() << "Connection failed:" << socket.errorString();
         return false;
     }
-    sockfd.setblocking(false);
-    ip = std::string(cip);
-    port = std::string(cport);
+    ip = cip;
+    port = cport;
     user_name = cuser_name;
     messages->append("<span style='color: 0000FF;'>connected.</span>");
-    rtimer = new QTimer(this);
-    rtimer->setInterval(300);
-    connect(rtimer, &QTimer::timeout, this, &RelayWindow::readData);
-    rtimer->start();
     return true;
 }
 
 static constexpr size_t BUFFER_SIZE = 1024 * 8;
 
 void RelayWindow::readData() {
-
-    pollfd pfd{};
-    pfd.fd = sockfd.sockfd();
-    pfd.events = POLLIN;
-
-    int value = poll(&pfd, 1, 100);
-    if (value <= 0)
+    if (socket.state() != QTcpSocket::ConnectedState) {
         return;
-
-    char buffer[BUFFER_SIZE] = {};
-    ssize_t bytes = sockfd.read(buffer, BUFFER_SIZE - 1, 0);
-
-    if (bytes < 0) {
-        if (errno != EAGAIN || errno != EWOULDBLOCK) {
-            sockfd.close();
-            std::cout << "closing connection.\n";
-            exit(0);
-        }
     }
-    buffer[bytes] = '\0';
-    messages->append("<span style='color: #FF0000;'>" + QString(buffer) + "</span>");
+
+    QByteArray data = socket.readAll();
+    if (data.isEmpty()) {
+        return;
+    }
+
+    QString receivedMessage = QString::fromUtf8(data);
+    messages->append("<span style='color: #FF0000;'>" + receivedMessage + "</span>");
+    emit messageReceived(receivedMessage);
 }
 
 void RelayWindow::sendMessage() {
     QString message = inputField->text();
     if (!message.isEmpty()) {
-        QString final_message = QString(user_name.c_str()) + ": " + message;
+        QString final_message = user_name + ": " + message;
         messages->append("<span style='color: #00FF00;'>" + final_message + "</span>");
-        sockfd.write_all(final_message.toStdString().c_str(), final_message.toStdString().length());
-        emit messageSent(final_message);
+        
+        if (socket.state() == QTcpSocket::ConnectedState) {
+            QByteArray data_buf = final_message.toUtf8();
+            qint64 bytesWritten = socket.write(data_buf);
+            if (bytesWritten > 0) {
+                emit messageSent(final_message);
+            }
+        } else {
+            std::cout << "Connection is not connected\n";
+            messages->append("<span style='color: red;'>Connection lost</span>");
+        }
         inputField->clear();
     }
+}
+
+void RelayWindow::onMessageReceived() {
+
+}
+
+void RelayWindow::onConnectionClosed() {
+
 }

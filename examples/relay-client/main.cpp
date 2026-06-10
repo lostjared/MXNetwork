@@ -1,5 +1,6 @@
 #include "relaywindow.hpp"
 #include <QApplication>
+#include <iostream>
 
 int main(int argc, char *argv[]) {
 
@@ -9,7 +10,6 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    mx_socket_ignore_pipe_signal();
     QApplication app(argc, argv);
     RelayWindow window;
     if (!window.makeConnection(argv[3], argv[1], argv[2])) {
