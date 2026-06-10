@@ -124,9 +124,10 @@ namespace mxnetwork {
     }
 
     void Socket::close() {
-        std::cout << "Socket: " << sock.sockfd << " closed.\n";
-        if (sock.sockfd >= 0)
+        if (sock.sockfd >= 0) {
+            std::cout << "Socket: " << sock.sockfd << " closed.\n";
             mx_socket_close(&sock);
+        }
         type = SocketType::TYPE_INVALID;
     }
 

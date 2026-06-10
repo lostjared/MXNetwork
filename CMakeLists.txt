@@ -14,6 +14,8 @@ include(CheckSymbolExists)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
 
+option(CLIENT "Qt6 relay client" OFF)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 add_compile_definitions(DEBUG_MODE)
 message(STATUS "Debug Enabled")
@@ -162,6 +164,13 @@ add_subdirectory(examples/udp-send)
 add_subdirectory(examples/unix-udp-recv)
 add_subdirectory(examples/unix-udp-send)
 add_subdirectory(examples/relay)
+
+if(CLIENT)
+	message(STATUS "Qt6 client example")
+	add_subdirectory(examples/relay-client)
+endif()
+
+
 set(MXNETWORK_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/mxnetwork")
 
 install(TARGETS mxnetwork

@@ -78,12 +78,9 @@ class Relay {
                 int value = poll(p_fd.data(), p_fd.size(), 100);
                 if (value <= 0)
                     continue;
-
                 std::lock_guard<std::mutex> lock(mut);
-
                 if (p_fd.size() != sockets->size())
                     continue;
-
                 for (size_t i = 0; i < p_fd.size(); ++i) {
                     if (p_fd[i].revents & POLLIN) {
                         char buffer[BUFFER_SIZE] = {};
@@ -112,9 +109,7 @@ class Relay {
                             }
                         }
                     }
-
                 }
-
                 std::erase_if(*sockets, [](const mxnetwork::Socket &s) {
                     bool dead = s.socket_type() == mxnetwork::SocketType::TYPE_INVALID;
                     if (dead) {
