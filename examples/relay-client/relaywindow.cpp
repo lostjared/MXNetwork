@@ -48,12 +48,12 @@ void RelayWindow::readData() {
         return;
     }
 
-    QByteArray data = socket.readAll();
-    if (data.isEmpty()) {
+    QByteArray data_text = socket.readAll();
+    if (data_text.isEmpty()) {
         return;
     }
 
-    QString receivedMessage = QString::fromUtf8(data);
+    QString receivedMessage = QString::fromUtf8(data_text);
     messages->append("<span style='color: #FF0000;'>" + receivedMessage + "</span>");
     emit messageReceived(receivedMessage);
 }

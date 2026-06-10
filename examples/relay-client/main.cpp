@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     std::cout << "made connection to: " << argv[1] << "\n";
+    window.setWindowTitle("Connected to: " + QString(argv[1]) + " as: " + argv[3]);
     window.show();
     return app.exec();
 }
