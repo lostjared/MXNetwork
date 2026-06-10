@@ -18,12 +18,12 @@ option(CLIENT "Qt6 relay client" OFF)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 add_compile_definitions(DEBUG_MODE)
-message(STATUS "Debug Enabled")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
     message(STATUS "using GNU GCC")
+    message(STATUS "Enabled: Strict warnings.")
     add_compile_options(
         -Wall
         -Wextra
@@ -32,13 +32,17 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wshadow
         -Wconversion
     )
-    add_compile_options(
-        "$<$<CONFIG:Debug>:-fsanitize=address>"
-        "$<$<CONFIG:Debug>:-fno-omit-frame-pointer>"
-    )
-    add_link_options(
-        "$<$<CONFIG:Debug>:-fsanitize=address>"
-    )
+
+    if(NOT CLIENT)
+        message(STATUS "Debug Enabled")
+        add_compile_options(
+            "$<$<CONFIG:Debug>:-fsanitize=address>"
+            "$<$<CONFIG:Debug>:-fno-omit-frame-pointer>"
+        )
+        add_link_options(
+            "$<$<CONFIG:Debug>:-fsanitize=address>"
+        )
+    endif()
 endif()
 else()
     set(CMAKE_BUILD_TYPE Release)
