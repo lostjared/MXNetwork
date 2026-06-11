@@ -119,6 +119,7 @@ class Relay {
                         if (errno != EAGAIN && errno != EWOULDBLOCK)
                             if (!sockets->empty())
                                 (*sockets)[z].close();
+                        continue;
                     }
                     std::cout << "relay: Sent message to: " << (*sockets)[z].sockfd() << " " << buffer << "\n";
                 }
