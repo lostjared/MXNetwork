@@ -2,12 +2,12 @@
 #define RELAYWINDOW_HPP
 
 #include <QLineEdit>
+#include <QMainWindow>
 #include <QPushButton>
+#include <QTcpSocket>
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QTcpSocket>
-#include <QMainWindow>
 
 class RelayWindow : public QMainWindow {
     Q_OBJECT
@@ -24,6 +24,7 @@ class RelayWindow : public QMainWindow {
     void onMessageReceived();
     void sendMessage();
     void readData();
+
   private:
     QWidget *containerWidget;
     QVBoxLayout *layout;

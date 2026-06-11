@@ -50,6 +50,7 @@ namespace mxnetwork {
         [[nodiscard]] bool is_open() const;
         void close();
         [[nodiscard]] SocketType socket_type() const;
+
       protected:
         MXSocket sock;
         SocketType type = SocketType::TYPE_INVALID;

@@ -1,9 +1,9 @@
 #include "relaywindow.hpp"
-#include <iostream>
-#include <cstdlib>
+#include <QTextCursor>
 #include <QTextDocument>
 #include <QTextEdit>
-#include <QTextCursor>
+#include <cstdlib>
+#include <iostream>
 
 RelayWindow::RelayWindow(QWidget *parent) : QMainWindow(parent) {
     containerWidget = new QWidget(this);
@@ -18,8 +18,8 @@ RelayWindow::RelayWindow(QWidget *parent) : QMainWindow(parent) {
     connect(inputField, &QLineEdit::returnPressed, this, &RelayWindow::sendMessage);
     connect(sendButton, &QPushButton::clicked, this, &RelayWindow::sendMessage);
     setGeometry(100, 100, 640, 480);
-    connect(&socket, &QObject::destroyed, [](QObject* o) {
-        qDebug() << "Destroyed object:" << qobject_cast<QTcpSocket*>(o);
+    connect(&socket, &QObject::destroyed, [](QObject *o) {
+        qDebug() << "Destroyed object:" << qobject_cast<QTcpSocket *>(o);
     });
     connect(&socket, &QTcpSocket::readyRead, this, &RelayWindow::readData);
     messages->setReadOnly(true);
@@ -28,7 +28,6 @@ RelayWindow::RelayWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 RelayWindow::~RelayWindow() {
-
 }
 
 bool RelayWindow::makeConnection(const QString &cuser_name, const QString &cip, const QString &cport) {
@@ -83,7 +82,6 @@ void RelayWindow::sendMessage() {
 }
 
 void RelayWindow::onMessageReceived() {
-
 }
 
 void RelayWindow::onConnectionClosed() {
