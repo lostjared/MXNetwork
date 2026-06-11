@@ -7,8 +7,9 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QTcpSocket>
+#include <QMainWindow>
 
-class RelayWindow : public QWidget {
+class RelayWindow : public QMainWindow {
     Q_OBJECT
   public:
     explicit RelayWindow(QWidget *parent = nullptr);

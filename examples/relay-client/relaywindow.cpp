@@ -5,7 +5,7 @@
 #include <QTextEdit>
 #include <QTextCursor>
 
-RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
+RelayWindow::RelayWindow(QWidget *parent) : QMainWindow(parent) {
     containerWidget = new QWidget(this);
     layout = new QVBoxLayout(containerWidget);
     messages = new QTextEdit(this);
@@ -14,8 +14,7 @@ RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
     layout->addWidget(messages);
     layout->addWidget(inputField);
     layout->addWidget(sendButton);
-    QVBoxLayout *outerLayout = new QVBoxLayout(this);
-    outerLayout->addWidget(containerWidget);
+    setCentralWidget(containerWidget);
     connect(inputField, &QLineEdit::returnPressed, this, &RelayWindow::sendMessage);
     connect(sendButton, &QPushButton::clicked, this, &RelayWindow::sendMessage);
     setGeometry(100, 100, 640, 480);
@@ -25,7 +24,7 @@ RelayWindow::RelayWindow(QWidget *parent) : QWidget(parent) {
     connect(&socket, &QTcpSocket::readyRead, this, &RelayWindow::readData);
     messages->setReadOnly(true);
     messages->moveCursor(QTextCursor::End);
-    setStyleSheet("QTextEdit, QLineEdit { background-color: #000; color: #FFFFFF; } QPushBUtton { background-color: #CCCCCC; color: #000; }");
+    setStyleSheet("QTextEdit, QLineEdit { background-color: #000; color: #FFFFFF; } QPushButton, QMainWindow { background-color: #CCCCCC; color: #000; }");
 }
 
 RelayWindow::~RelayWindow() {
@@ -57,7 +56,7 @@ void RelayWindow::readData() {
         return;
     }
     QString receivedMessage = QString::fromUtf8(data_text);
-    messages->append("<span style='color: #FF0000;'>" + receivedMessage + "</span>");
+    messages->append("<span style='color: #FF0000; font-size: 18px;'>" + receivedMessage + "</span>");
     messages->moveCursor(QTextCursor::End);
     emit messageReceived(receivedMessage);
 }
@@ -66,7 +65,7 @@ void RelayWindow::sendMessage() {
     QString message = inputField->text();
     if (!message.isEmpty()) {
         QString final_message = user_name + ": " + message;
-        messages->append("<span style='color: #00FF00;'>" + final_message + "</span>");
+        messages->append("<span style='color: #00CC00; font-size: 18px;'>" + final_message + "</span>");
         messages->moveCursor(QTextCursor::End);
         if (socket.state() == QTcpSocket::ConnectedState) {
             QByteArray data_buf = final_message.toUtf8();
