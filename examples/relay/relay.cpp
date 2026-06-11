@@ -12,6 +12,7 @@
 std::atomic<bool> active{false};
 std::mutex mut;
 static constexpr size_t BUFFER_SIZE = 1024 * 8;
+
 class Relay {
   public:
     Relay() {
@@ -96,17 +97,7 @@ class Relay {
                         } else {
                             buffer[bytes] = 0;
                             std::cout << "relay: Got message: " << buffer << "\n";
-                            for (size_t z = 0; z < sockets->size(); ++z) {
-                                if (i != z) {
-                                    ssize_t b = (*sockets)[z].write(buffer, bytes, 0);
-                                    if (b == -1) {
-                                        if (errno != EAGAIN && errno != EWOULDBLOCK)
-                                            if (!sockets->empty())
-                                                (*sockets)[z].close();
-                                    }
-                                    std::cout << "relay: Sent message to: " << (*sockets)[z].sockfd() << " " << buffer << "\n";
-                                }
-                            }
+                            send_all(i, buffer, bytes);
                         }
                     }
                 }
@@ -119,6 +110,21 @@ class Relay {
                 });
             }
         }
+
+        void send_all(size_t i, const char *buffer, size_t bytes) {
+            for (size_t z = 0; z < sockets->size(); ++z) {
+                if (i != z) {
+                    ssize_t b = (*sockets)[z].write(buffer, bytes, 0);
+                    if (b == -1) {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK)
+                            if (!sockets->empty())
+                                (*sockets)[z].close();
+                    }
+                    std::cout << "relay: Sent message to: " << (*sockets)[z].sockfd() << " " << buffer << "\n";
+                }
+            }
+        }
+
         std::vector<mxnetwork::Socket> *sockets;
     };
 };
