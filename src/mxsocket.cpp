@@ -366,7 +366,7 @@ void mx_socket_close(MXSocket *sock) {
 [[nodiscard]] bool mx_socket_valid(const MXSocket *sock) {
     if (sock == nullptr)
         return false;
-    return sock->sockfd >= 0;
+    return sock->sockfd != NULL_SOCKET;
 }
 
 ssize_t mx_socket_read(MXSocket *sock, void *buf, size_t len, int flags) {

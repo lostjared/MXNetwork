@@ -32,7 +32,7 @@ namespace mxnetwork {
     }
 
     Socket::~Socket() noexcept {
-        if (sock.sockfd >= 0) {
+        if (mx_socket_valid(&sock)) {
             close();
         }
     }
@@ -141,7 +141,7 @@ namespace mxnetwork {
     }
 
     void Socket::close() {
-        if (sock.sockfd >= 0) {
+        if (mx_socket_valid(&sock)) {
             std::cout << "Socket: " << sock.sockfd << " closed.\n";
             mx_socket_close(&sock);
         }

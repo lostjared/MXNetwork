@@ -5,12 +5,29 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-
-std::atomic<bool> active_loop(false);
-
+#ifdef _WIN32
+#include <windows.h>
+#ifndef SHUT_RDWR
+#define SHUT_RDWR SD_BOTH
+#endif
+#else
+#include <signal.h>
+#include <sys/socket.h>
+#endif
+std::atomic<bool> active_loop{false};
+#ifdef _WIN32
+BOOL WINAPI console_handler(DWORD signal) {
+    if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT) {
+        active_loop.store(false);
+        return TRUE;
+    }
+    return FALSE;
+}
+#else
 void exit_signal(int) {
     active_loop.store(false);
 }
+#endif
 
 int main(int argc, char **argv) {
 
@@ -18,10 +35,20 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: " << argv[0] << " <path>\n";
         return EXIT_FAILURE;
     }
+#ifdef _WIN32
+    if (!SetConsoleCtrlHandler(console_handler, TRUE)) {
+        std::cerr << "Error setting console handler\n";
+        return EXIT_FAILURE;
+    }
+#else
     struct sigaction sa = {};
     sa.sa_handler = exit_signal;
     sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, nullptr);
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        perror("sigaction");
+        return EXIT_FAILURE;
+    }
+#endif
     try {
         mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_UNIX_DGRAM);
         if (sock.bind_unix(argv[1])) {
