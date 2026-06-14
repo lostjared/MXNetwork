@@ -2,7 +2,7 @@
 
 MXNetwork is a small C23/C++20 socket library with a C-compatible low-level API and a move-only C++ RAII wrapper. It builds a static library named `mxnetwork` and provides examples for TCP, UDP, Unix-domain sockets, a simple relay server, an HTTP file downloader, and an optional Qt relay client.
 
-The C API centers on `MXSocket` in `mxnetwork/mxsocket.hpp`. The C++ API wraps it with `mxnetwork::Socket` in `mxnetwork/socket.hpp`.
+The C API centers on `MXSocket` in `mxnetwork/mxsocket.h`. The C++ API wraps it with `mxnetwork::Socket` in `mxnetwork/socket.hpp`.
 
 ## Features
 
