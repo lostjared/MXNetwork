@@ -176,6 +176,7 @@ if(WIN32)
 endif()
 if(EXAMPLES)
     add_subdirectory(examples/client)
+    add_subdirectory(examples/fileserve)
     add_subdirectory(examples/server)
     add_subdirectory(examples/udp-recv)
     add_subdirectory(examples/udp-send)
@@ -238,5 +239,3 @@ configure_file(
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
 )
-
-
