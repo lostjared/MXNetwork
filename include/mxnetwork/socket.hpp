@@ -2,7 +2,7 @@
 #define MXSOCKET_H
 
 #include "mxnetwork/exception.hpp"
-#include "mxnetwork/mxsocket.hpp"
+#include "mxnetwork/mxsocket.h"
 #include <optional>
 #include <string>
 #include <string_view>
