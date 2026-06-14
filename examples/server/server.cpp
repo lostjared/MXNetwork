@@ -3,8 +3,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <thread>
-
-// Include OS-specific headers for signals and shutdown flags
 #ifdef _WIN32
 #include <windows.h>
 #ifndef SHUT_RDWR

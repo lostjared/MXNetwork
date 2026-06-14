@@ -129,7 +129,7 @@
         if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
             break;
 
-        if (sfd >= 0)
+        if (sfd != NULL_SOCKET)
             mx_close_socket(sfd);
         sfd = NULL_SOCKET;
     }
@@ -139,7 +139,7 @@
         return false;
     }
 
-    if (rp != nullptr && sfd >= 0) {
+    if (rp != nullptr && sfd != NULL_SOCKET) {
         if (listen(sfd, backlog) == -1) {
             freeaddrinfo(rt);
             mx_close_socket(sfd);
@@ -205,7 +205,7 @@
 void mx_socket_close(MXSocket *sock) {
     if (sock == nullptr)
         return;
-    if (sock->sockfd >= 0)
+    if (mx_socket_valid(sock))
         mx_close_socket(sock->sockfd);
     sock->sockfd = NULL_SOCKET;
 }
@@ -213,7 +213,7 @@ void mx_socket_close(MXSocket *sock) {
 [[nodiscard]] bool mx_socket_set_blocking(MXSocket *sock, bool state) {
     if (sock == nullptr)
         return false;
-    if (sock->sockfd >= 0) {
+    if (mx_socket_valid(sock)) {
 #ifdef _WIN32
         u_long mode = state ? 0 : 1;
         if (ioctlsocket(sock->sockfd, FIONBIO, &mode) != 0) {
@@ -274,7 +274,7 @@ void mx_socket_close(MXSocket *sock) {
         if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
             break;
 
-        if (sfd >= 0) {
+        if (sfd != NULL_SOCKET) {
             mx_close_socket(sfd);
             sfd = NULL_SOCKET;
         }
@@ -286,7 +286,7 @@ void mx_socket_close(MXSocket *sock) {
         memcpy(&sock->inet, rp->ai_addr, rp->ai_addrlen);
     } else {
         freeaddrinfo(rt);
-        if (sfd >= 0)
+        if (sfd != NULL_SOCKET)
             mx_close_socket(sfd);
         return false;
     }
@@ -549,7 +549,7 @@ ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
         return -1;
 
     ssize_t bytes = 0;
-    socklen_t len = MX_LEN(sizeof(struct sockaddr_storage));
+    socklen_t len = (socklen_t)sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
     bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&caddr, &len);
     return bytes;
