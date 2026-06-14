@@ -28,6 +28,9 @@ typedef ptrdiff_t ssize_t;
 #define SOCK_EINTR WSAEINTR
 #define SOCK_EAGAIN WSAEWOULDBLOCK
 #define SOCK_EWOULDBLOCK WSAEWOULDBLOCK
+#define SOCK_ECONNABORTED WSAECONNABORTED
+#define SOCK_EINVAL WSAEINVAL
+#define SOCK_EBADF WSAEBADF
 #define NULL_SOCKET INVALID_SOCKET
 #define MX_LEN(x) (int)(x)
 #else
@@ -46,6 +49,9 @@ typedef int mx_socket_fd;
 #define SOCK_EINTR EINTR
 #define SOCK_EAGAIN EAGAIN
 #define SOCK_EWOULDBLOCK EWOULDBLOCK
+#define SOCK_ECONNABORTED ECONNABORTED
+#define SOCK_EINVAL EINVAL
+#define SOCK_EBADF EBADF
 #define MX_LEN(x) (size_t)(x)
 #define NULL_SOCKET -1
 #endif
