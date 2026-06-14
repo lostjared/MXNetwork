@@ -3,30 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
+#include <afunix.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <afunix.h>
-#define mx_close_socket(s) closesocket(s)
-#define mx_set_err(e) WSASetLastError(WSA ## e)
-#define SOCK_ERRNO WSAGetLastError()
-#define SOCK_EINTR WSAEINTR
-#define SOCK_EAGAIN WSAEWOULDBLOCK
-#define SOCK_EWOULDBLOCK WSAEWOULDBLOCK
-#define NULL_SOCKET INVALID_SOCKET
-#define MX_LEN(x) (int)(x)
+
 #else
+#include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#define mx_close_socket(s) close(s)
-#define mx_set_err(e) (errno = (e))
-#define SOCK_ERRNO errno
-#define SOCK_EINTR EINTR
-#define SOCK_EAGAIN EAGAIN
-#define SOCK_EWOULDBLOCK EWOULDBLOCK
-#define MX_LEN(x) (size_t)(x)
-#define NULL_SOCKET -1
+
 #endif
 
 [[nodiscard]] bool mx_socket_unix_listen(MXSocket *sock, const char *path, int backlog, int type) {
@@ -37,9 +23,9 @@
     struct sockaddr_un addr;
     mx_socket_fd sockfd = socket(AF_UNIX, type, 0);
 #ifdef _WIN32
-    if(sockfd == INVALID_SOCKET) {
+    if (sockfd == INVALID_SOCKET) {
 #else
-    if(sockfd == -1) {	    
+    if (sockfd == -1) {
 #endif
         perror("socket");
         return false;
@@ -124,9 +110,9 @@
     for (rp = rt; rp != NULL; rp = rp->ai_next) {
         sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 #ifdef _WIN32
-	if (sfd == INVALID_SOCKET)
+        if (sfd == INVALID_SOCKET)
 #else
-        if (sfd == -1) 
+        if (sfd == -1)
 #endif
             continue;
 
@@ -145,7 +131,7 @@
 
         if (sfd >= 0)
             mx_close_socket(sfd);
-        sfd =  NULL_SOCKET;
+        sfd = NULL_SOCKET;
     }
 
     if (sfd == NULL_SOCKET) {
@@ -184,13 +170,13 @@
     if (newfd == INVALID_SOCKET)
         return false;
     u_long mode = input->blocking ? 0 : 1;
-    if(ioctlsocket(newfd, FIONBIO, &mode) != 0) {
-	    mx_close_socket(newfd);
-	    return false;
+    if (ioctlsocket(newfd, FIONBIO, &mode) != 0) {
+        mx_close_socket(newfd);
+        return false;
     }
 #else
-    if(newfd == NULL_SOCKET)
-	    return false;
+    if (newfd == NULL_SOCKET)
+        return false;
 
     int flags = fcntl(newfd, F_GETFL);
     if (flags == -1) {
@@ -229,11 +215,11 @@ void mx_socket_close(MXSocket *sock) {
         return false;
     if (sock->sockfd >= 0) {
 #ifdef _WIN32
-	    u_long mode = state ? 0 : 1;
-	    if(ioctlsocket(sock->sockfd, FIONBIO, &mode) != 0) {
-		    fprintf(stderr, "Error setting flags for: %d\n", (int)sock->sockfd);
-		    return false;
-	    }
+        u_long mode = state ? 0 : 1;
+        if (ioctlsocket(sock->sockfd, FIONBIO, &mode) != 0) {
+            fprintf(stderr, "Error setting flags for: %d\n", (int)sock->sockfd);
+            return false;
+        }
 #else
         int flags = fcntl(sock->sockfd, F_GETFL);
         if (flags == -1) {
@@ -279,7 +265,7 @@ void mx_socket_close(MXSocket *sock) {
     for (rp = rt; rp != nullptr; rp = rp->ai_next) {
         sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 #ifdef _WIN32
-	if (sfd == INVALID_SOCKET)
+        if (sfd == INVALID_SOCKET)
 #else
         if (sfd == -1)
 #endif
@@ -466,10 +452,10 @@ ssize_t mx_socket_send(MXSocket *sock, const void *buf, size_t len, int flags) {
             break;
         }
 
-	if(SOCK_ERRNO == SOCK_EINTR)
+        if (SOCK_ERRNO == SOCK_EINTR)
             continue;
 
-    if(SOCK_ERRNO == SOCK_EAGAIN || SOCK_ERRNO == SOCK_EWOULDBLOCK) {
+        if (SOCK_ERRNO == SOCK_EAGAIN || SOCK_ERRNO == SOCK_EWOULDBLOCK) {
             if (!sock->blocking)
                 break;
             continue;
@@ -490,9 +476,9 @@ ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes) {
     const char *ptr = (const char *)buf;
     size_t left = bytes;
     while (left > 0) {
-        ssize_t written = send(sock->sockfd, (const char*)ptr, MX_LEN(left), 0);
+        ssize_t written = send(sock->sockfd, (const char *)ptr, MX_LEN(left), 0);
         if (written == -1) {
-	    if(SOCK_ERRNO == SOCK_EINTR) {
+            if (SOCK_ERRNO == SOCK_EINTR) {
                 continue;
             }
             return -1;
@@ -510,9 +496,9 @@ ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
     char *ptr = (char *)buf;
     size_t left = bytes;
     while (left > 0) {
-        ssize_t bytes_read = recv(sock->sockfd, (char*)ptr, MX_LEN(left), 0);
+        ssize_t bytes_read = recv(sock->sockfd, (char *)ptr, MX_LEN(left), 0);
         if (bytes_read == -1) {
-            if(SOCK_ERRNO == SOCK_EINTR) {
+            if (SOCK_ERRNO == SOCK_EINTR) {
                 continue;
             }
             return -1;

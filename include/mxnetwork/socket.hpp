@@ -10,10 +10,10 @@
 namespace mxnetwork {
 
     struct MXNetworkInit {
-      MXNetworkInit();
-      ~MXNetworkInit();
-      MXNetworkInit(const MXNetworkInit&) = delete;
-      MXNetworkInit& operator=(const MXNetworkInit&) = delete;
+        MXNetworkInit();
+        ~MXNetworkInit();
+        MXNetworkInit(const MXNetworkInit &) = delete;
+        MXNetworkInit &operator=(const MXNetworkInit &) = delete;
     };
 
     enum class SocketType {
