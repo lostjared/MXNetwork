@@ -22,6 +22,8 @@ namespace mxnetwork {
 #endif
     }
 
+    Socket::Socket() noexcept : Socket(SocketType::TYPE_INVALID) {}
+
     Socket::Socket(SocketType stype) noexcept {
         type = stype;
         if (mx_socket_init(&sock))

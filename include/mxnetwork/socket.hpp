@@ -26,7 +26,7 @@ namespace mxnetwork {
 
     class Socket {
       public:
-        Socket() = default;
+        Socket() noexcept;
         Socket(SocketType type) noexcept;
         ~Socket() noexcept;
         Socket(int sockfd, SocketType type);
