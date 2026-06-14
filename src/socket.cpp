@@ -5,6 +5,23 @@
 #include <string>
 namespace mxnetwork {
 
+    MXNetworkInit::MXNetworkInit() {
+#ifdef _WIN32
+        WSADATA wsaData;
+        int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (err != 0) {
+            fprintf(stderr, "WSAStartup failed with error: %d\n", err);
+            exit(1);
+        }
+#endif
+    }
+
+    MXNetworkInit::~MXNetworkInit() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
+
     Socket::Socket(SocketType stype) noexcept {
         type = stype;
         if (mx_socket_init(&sock))
@@ -45,7 +62,7 @@ namespace mxnetwork {
         if (this != &s) {
             type = s.type;
             if (sock.sockfd >= 0)
-                ::close(sock.sockfd);
+                ::mx_close_socket(sock.sockfd);
             setsocket(s.sock);
             s.sock.sockfd = -1;
         }
@@ -181,7 +198,7 @@ namespace mxnetwork {
         sock.blocking = s.blocking;
         sock.addrlen = s.addrlen;
         if (type == SocketType::TYPE_INET || type == SocketType::TYPE_INET_DGRAM) {
-            size_t len_size = (s.addrlen > sizeof(sock.inet)) ? sizeof(sock.inet) : s.addrlen;
+            size_t len_size = (static_cast<size_t>(s.addrlen) > sizeof(sock.inet)) ? sizeof(sock.inet) : static_cast<size_t>(s.addrlen);
             memcpy(&sock.inet, &s.inet, len_size);
         } else if (type == SocketType::TYPE_UNIX || type == SocketType::TYPE_UNIX_DGRAM)
             sock.sun = s.sun;

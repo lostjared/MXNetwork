@@ -1,6 +1,33 @@
 #include "mxnetwork/mxsocket.hpp"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <afunix.h>
+#define mx_close_socket(s) closesocket(s)
+#define mx_set_err(e) WSASetLastError(WSA ## e)
+#define SOCK_ERRNO WSAGetLastError()
+#define SOCK_EINTR WSAEINTR
+#define SOCK_EAGAIN WSAEWOULDBLOCK
+#define SOCK_EWOULDBLOCK WSAEWOULDBLOCK
+#define NULL_SOCKET INVALID_SOCKET
+#define MX_LEN(x) (int)(x)
+#else
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#define mx_close_socket(s) close(s)
+#define mx_set_err(e) (errno = (e))
+#define SOCK_ERRNO errno
+#define SOCK_EINTR EINTR
+#define SOCK_EAGAIN EAGAIN
+#define SOCK_EWOULDBLOCK EWOULDBLOCK
+#define MX_LEN(x) (size_t)(x)
+#define NULL_SOCKET -1
+#endif
 
 [[nodiscard]] bool mx_socket_unix_listen(MXSocket *sock, const char *path, int backlog, int type) {
     if (path == nullptr)
@@ -8,14 +35,18 @@
     if (!mx_socket_init(sock))
         return false;
     struct sockaddr_un addr;
-    int sockfd = socket(AF_UNIX, type, 0);
-    if (sockfd == -1) {
+    mx_socket_fd sockfd = socket(AF_UNIX, type, 0);
+#ifdef _WIN32
+    if(sockfd == INVALID_SOCKET) {
+#else
+    if(sockfd == -1) {	    
+#endif
         perror("socket");
         return false;
     }
     if (remove(path) == -1 && errno == ENOENT) {
         perror("remove");
-        close(sockfd);
+        mx_close_socket(sockfd);
         return false;
     }
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -23,13 +54,13 @@
     addr.sun_family = AF_UNIX;
     if (bind(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1) {
         perror("bind");
-        close(sockfd);
+        mx_close_socket(sockfd);
         return false;
     }
 
     if (listen(sockfd, backlog) == -1) {
         perror("listen");
-        close(sockfd);
+        mx_close_socket(sockfd);
         return false;
     }
     sock->sockfd = sockfd;
@@ -42,19 +73,23 @@
         return false;
     if (!mx_socket_init(sock))
         return false;
-    int sockfd = -1;
+    mx_socket_fd sockfd = NULL_SOCKET;
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
     sockfd = socket(AF_UNIX, type, 0);
+#ifdef _WIN32
+    if (sockfd == INVALID_SOCKET) {
+#else
     if (sockfd == -1) {
+#endif
         perror("socket");
         return false;
     }
     strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
     if (connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1) {
         perror("connect");
-        close(sockfd);
+        mx_close_socket(sockfd);
         return false;
     }
     sock->sockfd = sockfd;
@@ -71,7 +106,7 @@
 
     struct addrinfo hints;
     struct addrinfo *rt, *rp;
-    int sfd = -1, optval, s;
+    mx_socket_fd sfd = NULL_SOCKET, optval, s;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_canonname = nullptr;
@@ -88,11 +123,19 @@
 
     for (rp = rt; rp != NULL; rp = rp->ai_next) {
         sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sfd == -1)
+#ifdef _WIN32
+	if (sfd == INVALID_SOCKET)
+#else
+        if (sfd == -1) 
+#endif
             continue;
 
+#ifdef _WIN32
+        if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == -1) {
+#else
         if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) {
-            close(sfd);
+#endif
+            mx_close_socket(sfd);
             freeaddrinfo(rt);
             return false;
         }
@@ -101,11 +144,11 @@
             break;
 
         if (sfd >= 0)
-            close(sfd);
-        sfd = -1;
+            mx_close_socket(sfd);
+        sfd =  NULL_SOCKET;
     }
 
-    if (sfd == -1) {
+    if (sfd == NULL_SOCKET) {
         freeaddrinfo(rt);
         return false;
     }
@@ -113,7 +156,7 @@
     if (rp != nullptr && sfd >= 0) {
         if (listen(sfd, backlog) == -1) {
             freeaddrinfo(rt);
-            close(sfd);
+            mx_close_socket(sfd);
             return false;
         }
         sock->sockfd = sfd;
@@ -121,7 +164,7 @@
         memcpy(&sock->inet, rp->ai_addr, rp->ai_addrlen);
     } else {
         if (sfd >= 0)
-            close(sfd);
+            mx_close_socket(sfd);
         return false;
     }
 
@@ -136,9 +179,18 @@
     if (!mx_socket_valid(input))
         return false;
 
-    int newfd = accept(input->sockfd, 0, 0);
-    if (newfd == -1)
+    mx_socket_fd newfd = accept(input->sockfd, 0, 0);
+#ifdef _WIN32
+    if (newfd == INVALID_SOCKET)
         return false;
+    u_long mode = input->blocking ? 0 : 1;
+    if(ioctlsocket(newfd, FIONBIO, &mode) != 0) {
+	    mx_close_socket(newfd);
+	    return false;
+    }
+#else
+    if(newfd == NULL_SOCKET)
+	    return false;
 
     int flags = fcntl(newfd, F_GETFL);
     if (flags == -1) {
@@ -150,9 +202,10 @@
     else
         flags |= O_NONBLOCK;
     if (fcntl(newfd, F_SETFL, flags) == -1) {
-        close(newfd);
+        mx_close_socket(newfd);
         return false;
     }
+#endif
     if (mx_socket_valid(output))
         mx_socket_close(output);
     output->sockfd = newfd;
@@ -167,14 +220,21 @@ void mx_socket_close(MXSocket *sock) {
     if (sock == nullptr)
         return;
     if (sock->sockfd >= 0)
-        close(sock->sockfd);
-    sock->sockfd = -1;
+        mx_close_socket(sock->sockfd);
+    sock->sockfd = NULL_SOCKET;
 }
 
 [[nodiscard]] bool mx_socket_set_blocking(MXSocket *sock, bool state) {
     if (sock == nullptr)
         return false;
     if (sock->sockfd >= 0) {
+#ifdef _WIN32
+	    u_long mode = state ? 0 : 1;
+	    if(ioctlsocket(sock->sockfd, FIONBIO, &mode) != 0) {
+		    fprintf(stderr, "Error setting flags for: %d\n", (int)sock->sockfd);
+		    return false;
+	    }
+#else
         int flags = fcntl(sock->sockfd, F_GETFL);
         if (flags == -1) {
             fprintf(stderr, "Error getting flags for: %d\n", sock->sockfd);
@@ -188,6 +248,7 @@ void mx_socket_close(MXSocket *sock) {
             fprintf(stderr, "Error setting flags for: %d\n", sock->sockfd);
             return false;
         }
+#endif
         sock->blocking = state;
     } else
         return false;
@@ -203,7 +264,7 @@ void mx_socket_close(MXSocket *sock) {
 
     struct addrinfo hints;
     struct addrinfo *rt, *rp;
-    int sfd = -1, s;
+    mx_socket_fd sfd = NULL_SOCKET, s;
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_canonname = nullptr;
     hints.ai_addr = nullptr;
@@ -217,15 +278,19 @@ void mx_socket_close(MXSocket *sock) {
     }
     for (rp = rt; rp != nullptr; rp = rp->ai_next) {
         sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+#ifdef _WIN32
+	if (sfd == INVALID_SOCKET)
+#else
         if (sfd == -1)
+#endif
             continue;
 
         if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
             break;
 
         if (sfd >= 0) {
-            close(sfd);
-            sfd = -1;
+            mx_close_socket(sfd);
+            sfd = NULL_SOCKET;
         }
     }
 
@@ -236,7 +301,7 @@ void mx_socket_close(MXSocket *sock) {
     } else {
         freeaddrinfo(rt);
         if (sfd >= 0)
-            close(sfd);
+            mx_close_socket(sfd);
         return false;
     }
 
@@ -247,7 +312,7 @@ void mx_socket_close(MXSocket *sock) {
 [[nodiscard]] bool mx_socket_bind(MXSocket *sock, const char *port) {
     if (!mx_socket_init(sock) || port == nullptr)
         return false;
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    mx_socket_fd sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct addrinfo hints = {};
     struct addrinfo *result = nullptr;
     struct addrinfo *rp = nullptr;
@@ -278,19 +343,23 @@ void mx_socket_close(MXSocket *sock) {
     if (!mx_socket_init(s) || path == nullptr)
         return false;
 
-    int sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    mx_socket_fd sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+#ifdef _WIN32
+    if (sockfd == INVALID_SOCKET) {
+#else
     if (sockfd == -1) {
+#endif
         perror("socket");
         return false;
     }
-    unlink(path);
+    remove(path);
     struct sockaddr_un caddy;
     memset(&caddy, 0, sizeof(struct sockaddr_un));
     caddy.sun_family = AF_UNIX;
     strncpy(caddy.sun_path, path, sizeof(caddy.sun_path) - 1);
     if (bind(sockfd, (struct sockaddr *)&caddy, sizeof(caddy)) == -1) {
         perror("bind");
-        close(sockfd);
+        mx_close_socket(sockfd);
         return false;
     }
     s->sun = caddy;
@@ -303,7 +372,7 @@ void mx_socket_close(MXSocket *sock) {
     if (sock == nullptr)
         return false;
     memset(sock, 0, sizeof(MXSocket));
-    sock->sockfd = -1;
+    sock->sockfd = NULL_SOCKET;
     sock->blocking = true;
     return true;
 }
@@ -318,32 +387,36 @@ ssize_t mx_socket_read(MXSocket *sock, void *buf, size_t len, int flags) {
     if (sock == nullptr || buf == nullptr || len == 0)
         return -1;
     if (!mx_socket_valid(sock)) {
-        errno = EBADF;
+        mx_set_err(EBADF);
         return -1;
     }
-    return recv(sock->sockfd, buf, len, flags);
+    return recv(sock->sockfd, (char *)buf, MX_LEN(len), flags);
 }
 
 ssize_t mx_socket_send(MXSocket *sock, const void *buf, size_t len, int flags) {
     if (sock == nullptr || buf == nullptr || len == 0)
         return -1;
     if (!mx_socket_valid(sock)) {
-        errno = EBADF;
+        mx_set_err(EBADF);
         return -1;
     }
-    return send(sock->sockfd, buf, len, flags);
+    return send(sock->sockfd, (const char *)buf, MX_LEN(len), flags);
 }
 
 [[nodiscard]] bool mx_socket_is_open(const MXSocket *sock) {
     if (sock == nullptr || !mx_socket_valid(sock))
         return false;
     char c = 0;
+#ifdef _WIN32
+    ssize_t r = recv(sock->sockfd, &c, 1, MSG_PEEK);
+#else
     ssize_t r = recv(sock->sockfd, &c, 1, MSG_PEEK | MSG_DONTWAIT);
+#endif
     if (r == 0)
         return false;
     if (r > 0)
         return true;
-    if (r < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+    if (r < 0 && (SOCK_ERRNO == SOCK_EAGAIN || SOCK_ERRNO == SOCK_EWOULDBLOCK)) {
         return true;
     }
     return false;
@@ -354,7 +427,7 @@ ssize_t mx_socket_send(MXSocket *sock, const void *buf, size_t len, int flags) {
         return false;
 
     if (!mx_socket_valid(sock)) {
-        errno = EBADF;
+        mx_set_err(EBADF);
         return false;
     }
 
@@ -392,9 +465,11 @@ ssize_t mx_socket_send(MXSocket *sock, const void *buf, size_t len, int flags) {
             }
             break;
         }
-        if (errno == EINTR)
+
+	if(SOCK_ERRNO == SOCK_EINTR)
             continue;
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+
+    if(SOCK_ERRNO == SOCK_EAGAIN || SOCK_ERRNO == SOCK_EWOULDBLOCK) {
             if (!sock->blocking)
                 break;
             continue;
@@ -415,9 +490,9 @@ ssize_t mx_socket_write_all(MXSocket *sock, const void *buf, size_t bytes) {
     const char *ptr = (const char *)buf;
     size_t left = bytes;
     while (left > 0) {
-        ssize_t written = write(sock->sockfd, ptr, left);
+        ssize_t written = send(sock->sockfd, (const char*)ptr, MX_LEN(left), 0);
         if (written == -1) {
-            if (errno == EINTR) {
+	    if(SOCK_ERRNO == SOCK_EINTR) {
                 continue;
             }
             return -1;
@@ -435,9 +510,9 @@ ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
     char *ptr = (char *)buf;
     size_t left = bytes;
     while (left > 0) {
-        ssize_t bytes_read = read(sock->sockfd, ptr, left);
+        ssize_t bytes_read = recv(sock->sockfd, (char*)ptr, MX_LEN(left), 0);
         if (bytes_read == -1) {
-            if (errno == EINTR) {
+            if(SOCK_ERRNO == SOCK_EINTR) {
                 continue;
             }
             return -1;
@@ -451,7 +526,9 @@ ssize_t mx_socket_read_all(MXSocket *sock, void *buf, size_t bytes) {
 }
 
 void mx_socket_ignore_pipe_signal() {
+#ifndef _WIN32
     signal(SIGPIPE, SIG_IGN);
+#endif
 }
 
 ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
@@ -459,7 +536,7 @@ ssize_t mx_socket_sendto(MXSocket *sock, const void *buf, size_t src_bytes) {
         return -1;
 
     ssize_t bytes = 0;
-    bytes = sendto(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&sock->inet, sock->addrlen);
+    bytes = sendto(sock->sockfd, (const char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&sock->inet, sock->addrlen);
     return bytes;
 }
 ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
@@ -467,9 +544,9 @@ ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
         return -1;
 
     ssize_t bytes = 0;
-    socklen_t len = sizeof(struct sockaddr_storage);
+    socklen_t len = (socklen_t)sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
-    bytes = recvfrom(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&caddr, &len);
+    bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&caddr, &len);
     return bytes;
 }
 
@@ -478,7 +555,7 @@ ssize_t mx_socket_unix_sendto(MXSocket *sock, const void *buf, size_t src_bytes)
         return -1;
 
     ssize_t bytes = 0;
-    bytes = sendto(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&sock->sun, sock->addrlen);
+    bytes = sendto(sock->sockfd, (const char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&sock->sun, sock->addrlen);
     return bytes;
 }
 ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
@@ -486,8 +563,8 @@ ssize_t mx_socket_unix_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
         return -1;
 
     ssize_t bytes = 0;
-    socklen_t len = sizeof(struct sockaddr_storage);
+    socklen_t len = MX_LEN(sizeof(struct sockaddr_storage));
     struct sockaddr_storage caddr;
-    bytes = recvfrom(sock->sockfd, buf, src_bytes, 0, (struct sockaddr *)&caddr, &len);
+    bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&caddr, &len);
     return bytes;
 }

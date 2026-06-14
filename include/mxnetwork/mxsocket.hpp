@@ -1,22 +1,57 @@
 #ifndef MX_SOCKET_H
 #define MX_SOCKET_H
-
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include<winsock2.h>
+#include<ws2tcpip.h>
+#if __has_include(<afunix.h>)
+#include <afunix.h>
+#else
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX 108
+#endif
+struct sockaddr_un {
+    ADDRESS_FAMILY sun_family;     // AF_UNIX
+    char sun_path[UNIX_PATH_MAX];  // pathname
+};
+#endif
+typedef SOCKET mx_socket_fd;
+typedef int socklet_t;
+typedef ptrdiff_t ssize_t;
+#define mx_close_socket(s) closesocket(s)
+#define mx_set_err(e) WSASetLastError(WSA ## e)
+#define SOCK_ERRNO WSAGetLastError()
+#define SOCK_EINTR WSAEINTR
+#define SOCK_EAGAIN WSAEWOULDBLOCK
+#define SOCK_EWOULDBLOCK WSAEWOULDBLOCK
+#define NULL_SOCKET INVALID_SOCKET
+#define MX_LEN(x) (int)(x)
+#else
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+typedef int mx_socket_fd;
+#define mx_close_socket(s) close(s)
+#define mx_set_err(e) (errno = (e))
+#define SOCK_ERRNO errno
+#define SOCK_EINTR EINTR
+#define SOCK_EAGAIN EAGAIN
+#define SOCK_EWOULDBLOCK EWOULDBLOCK
+#define MX_LEN(x) (size_t)(x)
+#define NULL_SOCKET -1
+#endif
 
 typedef struct {
-    int sockfd;
+    mx_socket_fd sockfd;
     socklen_t addrlen;
     bool blocking;
     struct sockaddr_un sun;

@@ -9,6 +9,13 @@
 
 namespace mxnetwork {
 
+    struct MXNetworkInit {
+      MXNetworkInit();
+      ~MXNetworkInit();
+      MXNetworkInit(const MXNetworkInit&) = delete;
+      MXNetworkInit& operator=(const MXNetworkInit&) = delete;
+    };
+
     enum class SocketType {
         TYPE_INVALID = 0,
         TYPE_INET,
