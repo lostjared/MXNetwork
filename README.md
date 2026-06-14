@@ -1,14 +1,15 @@
 # MXNetwork
 
-MXNetwork is a small POSIX C++20 socket library. It provides a low-level C API around an `MXSocket` struct and a move-only C++ RAII wrapper, `mxnetwork::Socket`, for TCP, UDP, Unix stream, and Unix datagram sockets.
+MXNetwork is a small C++20 socket library with a C-compatible low-level API and a move-only C++ RAII wrapper. It builds a static library named `mxnetwork` and provides examples for TCP, UDP, Unix-domain sockets, a simple relay server, an HTTP file downloader, and an optional Qt relay client.
 
-The project builds a static library named `mxnetwork` and includes several example programs for common socket workflows.
+The C API centers on `MXSocket` in `mxnetwork/mxsocket.hpp`. The C++ API wraps it with `mxnetwork::Socket` in `mxnetwork/socket.hpp`.
 
 ## Features
 
-- TCP client and server sockets over IPv4.
-- UDP datagram sockets over IPv4.
-- Unix domain stream and datagram sockets.
+- IPv4 TCP client and server sockets.
+- IPv4 UDP datagram sockets.
+- Unix-domain stream and datagram sockets where supported.
+- Windows support through WinSock2.
 - Blocking and non-blocking socket mode support.
 - Move-only C++ socket ownership with automatic close in the destructor.
 - Helpers for `read`, `write`, `read_all`, `write_all`, `sendto`, `recvfrom`, and line reads.
@@ -18,9 +19,10 @@ The project builds a static library named `mxnetwork` and includes several examp
 
 - CMake 3.10 or newer.
 - A C++20 compiler.
-- POSIX socket headers and APIs, including `sys/socket.h`, `sys/un.h`, `arpa/inet.h`, `fcntl.h`, `poll.h`, and `unistd.h`.
-- pthreads, discovered through CMake `Threads`.
-- Qt6 Core, Widgets, and Network only if building the optional relay client example.
+- pthreads or the platform thread library discovered through CMake `Threads`.
+- On Unix-like systems: socket headers such as `sys/socket.h`, `sys/un.h`, `arpa/inet.h`, `netdb.h`, `fcntl.h`, `poll.h`, and `unistd.h`.
+- On Windows: `windows.h`, `winsock2.h`, and `ws2tcpip.h`. `afunix.h` is used when available, with a local fallback definition for `sockaddr_un`.
+- Qt6 Core, Widgets, and Network only when building the optional relay client.
 
 ## Build
 
@@ -29,25 +31,35 @@ cmake -S . -B build
 cmake --build build
 ```
 
-By default, CMake builds the static library and the command-line examples:
+By default, CMake builds the static library and examples:
 
-- `download-file`
 - `mxnetwork-client`
 - `mxnetwork-server`
 - `mxnetwork-recv-udp`
 - `mxnetwork-send-udp`
 - `mxnetwork-unix-recv-udp`
 - `mxnetwork-unix-send-udp`
+
+On Unix-like systems, the default examples also include:
+
+- `download-file`
 - `mxnetwork-relay`
 
-Debug builds enable stricter warnings for GCC and address sanitizer unless the optional Qt client is enabled:
+Disable examples with `EXAMPLES=OFF`:
+
+```sh
+cmake -S . -B build -DEXAMPLES=OFF
+cmake --build build
+```
+
+Debug builds enable `DEBUG_MODE`, debug symbols, strict GCC warnings, and address sanitizer when the Qt client is not enabled:
 
 ```sh
 cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-debug
 ```
 
-Release mode is used when no debug build type is selected.
+When no debug build type is selected, the top-level CMake config sets release mode and adds optimization flags.
 
 ## Optional Qt Relay Client
 
@@ -58,7 +70,7 @@ cmake -S . -B build-client -DCLIENT=ON
 cmake --build build-client
 ```
 
-This adds the `relay_client` executable from `examples/relay-client`.
+This adds the `relay_client` executable from `examples/relay-client`. It uses Qt's `QTcpSocket` directly for the GUI client.
 
 ## Install
 
@@ -93,6 +105,7 @@ target_link_libraries(my-app PRIVATE libmxnetwork::mxnetwork)
 #include <string>
 
 int main() {
+    mxnetwork::MXNetworkInit network_init;
     mx_socket_ignore_pipe_signal();
 
     mxnetwork::Socket sock(mxnetwork::SocketType::TYPE_INET);
@@ -111,12 +124,14 @@ int main() {
 }
 ```
 
+`mxnetwork::MXNetworkInit` initializes and cleans up WinSock on Windows. It is harmless to create on other platforms.
+
 The main socket types are:
 
 - `mxnetwork::SocketType::TYPE_INET` for IPv4 TCP sockets.
-- `mxnetwork::SocketType::TYPE_UNIX` for Unix stream sockets.
+- `mxnetwork::SocketType::TYPE_UNIX` for Unix-domain stream sockets.
 - `mxnetwork::SocketType::TYPE_INET_DGRAM` for IPv4 UDP sockets.
-- `mxnetwork::SocketType::TYPE_UNIX_DGRAM` for Unix datagram sockets.
+- `mxnetwork::SocketType::TYPE_UNIX_DGRAM` for Unix-domain datagram sockets.
 
 ## Examples
 
@@ -143,21 +158,27 @@ Unix datagram receiver and sender:
 ./build/examples/unix-udp-send/mxnetwork-unix-send-udp /tmp/mxnetwork.sock
 ```
 
-Relay server:
+Relay server, available on Unix-like builds:
 
 ```sh
 ./build/examples/relay/mxnetwork-relay 9002
 ```
 
-HTTP file download example:
+HTTP file download example, available on Unix-like builds:
 
 ```sh
 ./build/examples/download/download-file example.com 80 /index.html index.html
 ```
 
+Qt relay client, when built with `CLIENT=ON`:
+
+```sh
+./build/examples/relay-client/relay_client 127.0.0.1 9002 username
+```
+
 ## API Overview
 
-Include `mxnetwork/socket.hpp` to use the C++ wrapper. The wrapper owns the file descriptor, closes it on destruction, cannot be copied, and can be moved.
+Include `mxnetwork/socket.hpp` to use the C++ wrapper. The wrapper owns the socket descriptor, closes it on destruction, cannot be copied, and can be moved.
 
 Common `mxnetwork::Socket` methods:
 
