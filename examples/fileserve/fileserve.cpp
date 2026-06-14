@@ -39,8 +39,8 @@ namespace {
             return;
         }
 
-        const int fd = listener->sockfd();
-        if (fd >= 0) {
+        const mx_socket_fd fd = listener->sockfd();
+        if (fd != NULL_SOCKET) {
 #ifdef _WIN32
             shutdown(fd, SD_BOTH);
 #else
