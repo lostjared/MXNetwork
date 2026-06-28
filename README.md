@@ -7,7 +7,9 @@ The C API centers on `MXSocket` in `mxnetwork/mxsocket.h`. The C++ API wraps it 
 ## Features
 
 - IPv4 TCP client and server sockets.
+- IPv6 TCP client and server sockets.
 - IPv4 UDP datagram sockets.
+- IPv6 UDP datagram sockets.
 - Unix-domain stream and datagram sockets where supported.
 - Windows support through WinSock2.
 - Blocking and non-blocking socket mode support.
@@ -129,9 +131,29 @@ int main() {
 The main socket types are:
 
 - `mxnetwork::SocketType::TYPE_INET` for IPv4 TCP sockets.
+- `mxnetwork::SocketType::TYPE_INET6` for IPv6 TCP sockets.
 - `mxnetwork::SocketType::TYPE_UNIX` for Unix-domain stream sockets.
 - `mxnetwork::SocketType::TYPE_INET_DGRAM` for IPv4 UDP sockets.
+- `mxnetwork::SocketType::TYPE_INET6_DGRAM` for IPv6 UDP sockets.
 - `mxnetwork::SocketType::TYPE_UNIX_DGRAM` for Unix-domain datagram sockets.
+
+IPv4 and IPv6 use the same high-level C++ methods. Select the address family with the socket type, then call `connect(host, port)`, `listen(port, backlog)`, or `bind(port)` as usual:
+
+```cpp
+mxnetwork::Socket server(mxnetwork::SocketType::TYPE_INET6);
+if (!server.listen("8080", 5)) {
+    std::cerr << "IPv6 listen failed\n";
+    return 1;
+}
+
+mxnetwork::Socket client(mxnetwork::SocketType::TYPE_INET6);
+if (!client.connect("::1", "8080")) {
+    std::cerr << "IPv6 connect failed\n";
+    return 1;
+}
+```
+
+For IPv6 UDP, construct `mxnetwork::SocketType::TYPE_INET6_DGRAM`. `bind(port)` creates a receiver, `connect(host, port)` stores the remote endpoint, and the wrapper's `sendto` and `recvfrom` methods dispatch to the IPv6 datagram helpers.
 
 ## Examples
 
@@ -191,7 +213,12 @@ Common `mxnetwork::Socket` methods:
 - `sendto` and `recvfrom` for datagram sockets.
 - `valid()`, `is_open()`, `sockfd()`, `socket_type()`, and `close()`.
 
-Include `mxnetwork/mxsocket.hpp` to use the C-style API directly.
+Include `mxnetwork/mxsocket.h` to use the C-style API directly. IPv4 helpers keep their original names, while IPv6 uses the `mx_socket_ipv6_*` variants:
+
+- `mx_socket_ipv6_connect(s, host, port, type)`.
+- `mx_socket_ipv6_listen(s, port, backlog, type)`.
+- `mx_socket_ipv6_bind(s, port)`.
+- `mx_socket_ipv6_sendto(sock, buf, bytes)` and `mx_socket_ipv6_recvfrom(sock, buf, bytes)`.
 
 ## License
 
