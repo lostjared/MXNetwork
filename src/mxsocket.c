@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
+#ifndef _WIN32_WINNT 
+#define _WIN32_WINNT 0x0600
+#endif
 #include <afunix.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -604,7 +606,27 @@ ssize_t mx_socket_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
     socklen_t len = (socklen_t)sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
     bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&caddr, &len);
+    if (bytes >= 0)
+        mx_socket_store_inet_address(sock, (const struct sockaddr *)&caddr, len);
     return bytes;
+}
+
+ssize_t mx_socket_recvfrom_address(MXSocket *sock, void *buf, size_t src_bytes, MXSocketAddress *address) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0 || address == nullptr)
+        return -1;
+    address->length = (socklen_t)sizeof(address->storage);
+    ssize_t bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0,
+                             (struct sockaddr *)&address->storage, &address->length);
+    if (bytes >= 0)
+        mx_socket_store_inet_address(sock, (const struct sockaddr *)&address->storage, address->length);
+    return bytes;
+}
+
+ssize_t mx_socket_sendto_address(MXSocket *sock, const void *buf, size_t src_bytes, const MXSocketAddress *address) {
+    if (sock == nullptr || buf == nullptr || src_bytes == 0 || address == nullptr || address->length == 0)
+        return -1;
+    return sendto(sock->sockfd, (const char *)buf, MX_LEN(src_bytes), 0,
+                  (const struct sockaddr *)&address->storage, address->length);
 }
 
 ssize_t mx_socket_ipv6_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
@@ -615,6 +637,8 @@ ssize_t mx_socket_ipv6_recvfrom(MXSocket *sock, void *buf, size_t src_bytes) {
     socklen_t len = (socklen_t)sizeof(struct sockaddr_storage);
     struct sockaddr_storage caddr;
     bytes = recvfrom(sock->sockfd, (char *)buf, MX_LEN(src_bytes), 0, (struct sockaddr *)&caddr, &len);
+    if (bytes >= 0)
+        mx_socket_store_inet_address(sock, (const struct sockaddr *)&caddr, len);
     return bytes;
 }
 
