@@ -222,4 +222,5 @@ Include `mxnetwork/mxsocket.h` to use the C-style API directly. IPv4 helpers kee
 
 ## License
 
-MXNetwork is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
+See [LICENSE](LICENSE) for the full license text.
+
